@@ -68,7 +68,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Branch protection requiring green CI (owner repository setting) | not started, repository settings are not changed by the agent |
 | NDK choice for 16 KB alignment | done (NDK 27.2.12479018 with flexible page sizes flag; alignment checked in CI) |
 | DXC and glslang version pins | partly: SPIRV-Cross and DXC pins recorded in docs/dependency-manifest.md, not yet consumed by CI; glslang observed 15.1.0 |
-| WARP and software-Vulkan-on-Windows spike | WARP done; software Vulkan on Windows: probe of the runner added, result pending |
+| WARP and software-Vulkan-on-Windows spike | WARP done; software Vulkan on Windows: probe of the runner added, probe result (CI-verified observation): the Windows runner has the Vulkan loader (vulkan-1.dll in System32) but no Vulkan SDK and no software ICD installed, so Vulkan on Windows needs a downloaded software ICD (a Mesa build or SwiftShader); that download and a Vulkan test run are still to do |
 | GNOME spike start | not started |
 | Feature-test header check for `docs/cpp-standard.md` | not started |
 

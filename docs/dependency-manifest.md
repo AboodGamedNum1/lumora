@@ -8,7 +8,7 @@ Every direct dependency is pinned here with license, upstream and policy. A depe
 | SDL3 | release-3.4.20 | zlib | github.com/libsdl-org/SDL | CMake FetchContent, static | editor window layer (default per plan; GLFW is the fallback) | Linux, Windows (CI) |
 | Dear ImGui | v1.92.9b-docking | MIT | github.com/ocornut/imgui | CMake FetchContent | editor UI (no RHI backend yet) | Linux, Windows (CI) |
 | SPIRV-Cross | vulkan-sdk-1.4.357.0 (pinned, not yet fetched) | Apache-2.0 | github.com/KhronosGroup/SPIRV-Cross | CMake FetchContent when the GLES backend consumes it | SPIR-V to GLSL ES for the GLES 3.2 backend | not yet built |
-| DirectX Shader Compiler (DXC) | v1.9.2609 (pinned, not yet fetched; CI currently uses the dxc.exe in the Windows SDK, version printed in the Windows job log) | LLVM Release (Apache-2.0 with LLVM exceptions) | github.com/microsoft/DirectXShaderCompiler | release package or NuGet Microsoft.Direct3D.DXC, when the SDK dxc is not enough | HLSL to DXIL test shaders and later the shader pipeline | SDK dxc: Windows (CI) |
+| DirectX Shader Compiler (DXC) | v1.9.2609 (pinned, not yet fetched; CI currently uses the dxc.exe in the Windows SDK 10.0.26100.0, observed as 1.9.2602.17) | LLVM Release (Apache-2.0 with LLVM exceptions) | github.com/microsoft/DirectXShaderCompiler | release package or NuGet Microsoft.Direct3D.DXC, when the SDK dxc is not enough | HLSL to DXIL test shaders and later the shader pipeline | SDK dxc 1.9.2602.17: Windows (CI) |
 
 Update policy: bump a pin in its own commit, run the full CI, and update this table in the same commit. Security fixes are applied within a week of upstream release.
 
