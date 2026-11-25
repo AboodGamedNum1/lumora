@@ -92,3 +92,19 @@ TEST_CASE("deflated zip round trip, bomb guard and hostile input", "[zip]") {
   z[cd + 27] = 0x40;  // uncompressed size field high byte: about 1 GB
   CHECK_FALSE(read_zip_store(z.data(), z.size()).ok);
 }
+
+TEST_CASE("deflated entries with short distances survive the zip round trip", "[zip]") {
+  // Regression: 13 zero bytes deflate to a length/distance pair with distance 1 (no distance extra bits).
+  for (std::size_t n : {13u, 14u, 40u, 300u}) {
+    FileMap f;
+    f["z.bin"] = std::vector<std::uint8_t>(n, 0);
+    f["pat.bin"] = {};
+    for (std::size_t i = 0; i < n; ++i) f["pat.bin"].push_back(static_cast<std::uint8_t>("ab"[i % 2]));
+    for (int level : {1, 6}) {
+      const auto z = write_zip(f, level);
+      const auto r = read_zip_store(z.data(), z.size());
+      REQUIRE(r.ok);
+      CHECK(r.files == f);
+    }
+  }
+}

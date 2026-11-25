@@ -251,6 +251,7 @@ InflateStatus inflate_huffman_block(BitReader* br, OutputBuffer* out,
     if (dsym >= kNumDistSymbols) {
       return InflateStatus::BadSymbol;  // 30, 31
     }
+    extra = 0;  // the length's extra bits must not leak into distances without extra bits (1 to 4)
     if (kDistExtra[dsym] != 0 && !br->get(kDistExtra[dsym], &extra)) {
       return InflateStatus::Truncated;
     }
