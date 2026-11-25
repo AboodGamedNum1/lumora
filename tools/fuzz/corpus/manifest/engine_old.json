@@ -1,0 +1,1 @@
+{"format_version": 1, "scene_schema_version": 1, "lua_api_version": 1, "min_engine_version": "9.9.9", "name": "Aurora (sample)", "author": "Lumora project", "entry": {"scene": "scene.json", "settings": "settings.json"}}
