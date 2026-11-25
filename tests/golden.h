@@ -97,7 +97,8 @@ inline Result check(const std::string& name, const Image& actual, const std::str
   if (!read_ppm(base, expected)) return {false, 0, 0, "baseline missing: " + base.string()};
   Image diff;
   Result r = compare(actual, expected, tolerance, &diff);
-  if (!r.ok) write_ppm(fs::path(out_dir) / (name + ".diff.ppm"), diff);
+  // A size mismatch leaves `diff` empty (0x0); an empty image is not a valid PPM, so write none.
+  if (!r.ok && diff.w != 0 && diff.h != 0) write_ppm(fs::path(out_dir) / (name + ".diff.ppm"), diff);
   return r;
 }
 

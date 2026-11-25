@@ -1,5 +1,5 @@
-add_library(lumora_core STATIC src/version.cpp rhi/src/rhi.cpp)
-target_include_directories(lumora_core PUBLIC include rhi/include)
+add_library(lumora_core STATIC src/version.cpp rhi/src/rhi.cpp package/entry_policy.cpp)
+target_include_directories(lumora_core PUBLIC include rhi/include package)
 target_compile_features(lumora_core PUBLIC cxx_std_23)
 target_compile_definitions(lumora_core PUBLIC
   LUMORA_VERSION_STRING="${PROJECT_VERSION}")
