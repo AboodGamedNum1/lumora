@@ -22,6 +22,8 @@ class LumoraWallpaperService : WallpaperService() {
     override fun onCreateEngine(): Engine = LumoraEngine()
 
     inner class LumoraEngine : Engine(), Choreographer.FrameCallback {
+        private val breaker = CrashLoopBreaker(PrefsBreakerStore(this@LumoraWallpaperService))
+        private var safeMode = false
         private val policy = PausePolicy()
         private val pacer = FramePacer(TARGET_FPS)
         private val choreographer = Choreographer.getInstance()
@@ -40,6 +42,7 @@ class LumoraWallpaperService : WallpaperService() {
 
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
+            safeMode = !breaker.onEngineStart(System.currentTimeMillis())
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
             policy.onScreenOn(pm.isInteractive)
             registerReceiver(screenReceiver, IntentFilter().apply {
@@ -51,6 +54,7 @@ class LumoraWallpaperService : WallpaperService() {
         override fun onDestroy() {
             unregisterReceiver(screenReceiver)
             stop()
+            breaker.onCleanStop()
             super.onDestroy()
         }
 
@@ -98,6 +102,11 @@ class LumoraWallpaperService : WallpaperService() {
             val canvas: Canvas = try { holder.lockCanvas() } catch (e: Exception) { null } ?: return
             try {
                 val t = (frameTimeNanos / 1_000_000L) % 6000 / 6000f
+                if (safeMode) { // breaker tripped: static safe background, no animation
+                    canvas.drawColor(Color.DKGRAY)
+                    canvas.drawText("Lumora safe mode", 24f, 64f, paint)
+                    return
+                }
                 canvas.drawColor(Color.HSVToColor(floatArrayOf(t * 360f, 0.5f, 0.35f)))
                 val w = canvas.width.toFloat()
                 val h = canvas.height.toFloat()

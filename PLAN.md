@@ -89,6 +89,17 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Emulator hello triangle through the RHI | done: an instrumented test on the API 29 x86_64 emulator renders a triangle through the RHI GLES backend and checks pixels (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45639527288). Observed limits: the emulator context is OpenGL ES 3.0 on SwiftShader, not 3.2, and it draws nothing when a constant array is indexed by gl_VertexID, so the emulator test uses an if-chain vertex shader. The GLES backend falls back to an ES 3.x context and a 1x1 pbuffer when EGL 1.5 attributes or surfaceless make-current are not available. Not phone-GPU evidence. |
 | CodeQL | done: workflow for C and C++ runs green on push, pull request and weekly. Result upload to the Security tab needs code scanning enabled on the repository, an owner setting that is not changed here |
 
+## 5b. M2 detail (in progress)
+
+| Item | Status |
+|---|---|
+| WallpaperService in its own process, protected by BIND_WALLPAPER, wallpaper metadata | done as a first slice (declared and checked by an instrumented test on the API 29 emulator). The scene is a software Canvas animation, not the core renderer yet |
+| Frame pacing with a cap, visibility, surface and screen-off pause rules, fps overlay | done as pure logic with device tests (CI-verified on the API 29 emulator). Not yet verified on a real display or at the lock screen |
+| Crash-loop breaker with safe static mode | first slice written, tested by instrumented tests on the emulator once CI is green |
+| Engine renders through the RHI (window surface) | not started |
+| 16 KB, flavors, Direct Boot rule, AAB path checklist items | 16 KB alignment checked since M0; flavors, Direct Boot rule and AAB path not started |
+| Emulator lanes API 29, 34, 36 | API 29 only so far |
+
 ## 6. What is missing overall
 
 The product does not render a scene yet: no scene format, no Lua, no Android wallpaper service, no Linux wallpaper runtime, no editor beyond an empty window.
