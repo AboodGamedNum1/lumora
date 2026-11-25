@@ -108,6 +108,15 @@ The product does not render a scene yet: no scene format, no Lua, no Android wal
 
 M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES through SPIRV-Cross is done and CI-verified on GLES llvmpipe, software evidence): Vulkan swapchain, descriptor sets, vertex buffers, depth, blending and sync beyond a fence; GLES parity beyond the triangle and an ES 3.2 context check; DXC pin consumption; nested-shell GNOME spike run; branch protection (owner setting); real-GPU confirmation stays with gate G5.
 
+## 6a. Tooling and module work merged outside the milestones
+
+| Item | Status |
+| --- | --- |
+| Texture atlas packer (core/image/atlas, lumora-atlas CLI, docs/atlas.md) | merged and CI-verified on Linux, Windows and Android emulators (CPU only, software evidence) |
+| Fuzz corpus tool (tools/fuzz-tools, docs/fuzz-tools.md) | merged; its unit tests run in CI |
+| Animation clips and sampler (core/anim, M4 groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
+| Fuzz targets for atlas and animation parsing | not started |
+
 ## 6b. MW: Windows desktop runtime (planned)
 
 Added at the owner's request, as its own milestone beside the Android runtime (M2) and the Linux runtime (ML). Full text is in `docs/milestones.md`. It does not change the M2 order.
