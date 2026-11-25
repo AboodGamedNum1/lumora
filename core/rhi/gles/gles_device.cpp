@@ -81,10 +81,17 @@ class GlesDevice final : public Device {
     EGLConfig cfg = nullptr;
     EGLint n = 0;
     if (!eglChooseConfig(display_, cfg_attr, &cfg, 1, &n) || n == 0) cfg = EGL_NO_CONFIG_KHR;
+    // Preferred: an ES 3.2 context (EGL 1.5 attributes, with a debug context when validation is on).
     const EGLint ctx_attr[] = {EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 2,
                                EGL_CONTEXT_OPENGL_DEBUG, desc.enable_validation ? EGL_TRUE : EGL_FALSE, EGL_NONE};
     context_ = eglCreateContext(display_, cfg, EGL_NO_CONTEXT, ctx_attr);
-    if (context_ == EGL_NO_CONTEXT) return fail(error, "no GLES 3.2 context (eglCreateContext failed)");
+    if (context_ == EGL_NO_CONTEXT) {
+      // EGL 1.4 drivers (older Android) only know the client version attribute. The context is ES 3.x
+      // of whatever minor version the driver gives; capabilities() reports it, the caller decides.
+      const EGLint legacy_attr[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
+      context_ = eglCreateContext(display_, cfg, EGL_NO_CONTEXT, legacy_attr);
+    }
+    if (context_ == EGL_NO_CONTEXT) return fail(error, "no GLES 3.x context (eglCreateContext failed)");
     if (!eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_))
       return fail(error, "eglMakeCurrent (surfaceless) failed");
     const char* renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
