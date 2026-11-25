@@ -178,8 +178,15 @@ jobs:
           retention-days: 7
   android-emulator:
     # Answers the M0 question "does KVM work on the hosted runner": the job fails loudly if not.
+    # Lanes 34 and 36 are new in M2 and do not gate until they have passed once on main.
+    name: android-emulator (api ${{ matrix.api }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    continue-on-error: ${{ matrix.api != 29 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 34, 36]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Enable KVM
@@ -203,10 +210,10 @@ jobs:
         working-directory: android
         run: |
           for i in 1 2 3 4; do ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest && exit 0; sleep 60; done; exit 1
-      - name: Instrumented test on API 29 emulator (x86_64, software graphics, test-only ABI)
+      - name: Instrumented test on emulator (x86_64, software graphics, test-only ABI)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 29
+          api-level: ${{ matrix.api }}
           arch: x86_64
           target: default
           working-directory: android
@@ -215,6 +222,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: android-emulator-reports
+          name: android-emulator-reports-${{ matrix.api }}
           path: android/app/build/reports
           retention-days: 7
