@@ -24,7 +24,7 @@ M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table
 
 ## Next five tasks
 1. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.
-2. M1: golden-image harness with tolerance, then shader toolchain pins (glslang, SPIRV-Cross, DXC).
+2. M1: shader toolchain pins (glslang, SPIRV-Cross, DXC).
 3. M1: GLES 3.2 backend (via ANGLE or SwiftShader in CI).
 4. M1: D3D12 build and DXIL on Windows CI.
 5. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.

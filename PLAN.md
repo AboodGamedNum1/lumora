@@ -84,7 +84,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Vulkan backend: instance, device, validation layer (logged active and asserted in the test), named buffers and textures, command recording, one render pass (clear and store), graphics pipeline from SPIR-V, submit and fence wait, texture readback | done as a first slice (CI-verified on the lavapipe software driver, run https://github.com/Captain3BoOd/lumora/actions/runs/45587423739). A test renders a clear plus a triangle and checks pixels, with zero validation messages. Missing: swapchain, descriptor sets and bindings, vertex buffers, depth, blending, sync beyond a fence, pipeline cache, other formats. |
 | GLES 3.2 backend | not started |
 | D3D12 backend build, link and DXIL on Windows CI | not started |
-| Golden-image harness (lavapipe baselines) | not started |
+| Golden-image harness (lavapipe baseline, tolerance compare, diff artifacts, see `docs/golden-images.md`) | done, CI result pending in the next run |
 | Emulator hello triangle through the RHI | not started |
 | CodeQL | not started |
 
