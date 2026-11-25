@@ -55,10 +55,11 @@ class GlesDevice final : public Device {
   ~GlesDevice() override {
     if (display_ != EGL_NO_DISPLAY) {
       if (context_ != EGL_NO_CONTEXT) {
-        eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_);
+        eglMakeCurrent(display_, pbuffer_, pbuffer_, context_);
         for (auto& s : slots_) release(s);
         if (vao_) glDeleteVertexArrays(1, &vao_);
         eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        if (pbuffer_ != EGL_NO_SURFACE) eglDestroySurface(display_, pbuffer_);
         eglDestroyContext(display_, context_);
       }
       eglTerminate(display_);
@@ -92,8 +93,13 @@ class GlesDevice final : public Device {
       context_ = eglCreateContext(display_, cfg, EGL_NO_CONTEXT, legacy_attr);
     }
     if (context_ == EGL_NO_CONTEXT) return fail(error, "no GLES 3.x context (eglCreateContext failed)");
-    if (!eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_))
-      return fail(error, "eglMakeCurrent (surfaceless) failed");
+    if (!eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_)) {
+      // No surfaceless-context extension (Android): use a 1x1 pbuffer. All rendering goes to our own FBOs.
+      const EGLint pb_attr[] = {EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
+      pbuffer_ = cfg ? eglCreatePbufferSurface(display_, cfg, pb_attr) : EGL_NO_SURFACE;
+      if (pbuffer_ == EGL_NO_SURFACE || !eglMakeCurrent(display_, pbuffer_, pbuffer_, context_))
+        return fail(error, "eglMakeCurrent failed (surfaceless and pbuffer)");
+    }
     const char* renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
     const char* version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     caps_.device_name = std::string(renderer ? renderer : "?") + " / " + (version ? version : "?");
@@ -177,7 +183,7 @@ class GlesDevice final : public Device {
 
   bool submit(CommandBuffer& cb) override {
     auto& g = static_cast<GlesCommandBuffer&>(cb);
-    eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_);
+    eglMakeCurrent(display_, pbuffer_, pbuffer_, context_);
     bool ok = true;
     for (auto& op : g.ops_) ok = op() && ok;
     glFinish();
@@ -271,6 +277,7 @@ class GlesDevice final : public Device {
   Capabilities caps_;
   EGLDisplay display_ = EGL_NO_DISPLAY;
   EGLContext context_ = EGL_NO_CONTEXT;
+  EGLSurface pbuffer_ = EGL_NO_SURFACE;
   GLuint vao_ = 0;
   std::vector<Slot> slots_;
   std::vector<std::uint32_t> free_;
