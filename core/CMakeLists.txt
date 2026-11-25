@@ -63,7 +63,7 @@ if(WIN32)
 endif()
 target_sources(lumora_core PRIVATE render2d/cpu_renderer.cpp)
 target_include_directories(lumora_core PUBLIC render2d)
-target_sources(lumora_core PRIVATE package/deflate.cpp)
+target_sources(lumora_core PRIVATE package/deflate.cpp package/deflate_compress.cpp)
 
 # SPIR-V to GLSL ES through SPIRV-Cross (pinned). Off by default; Linux CI turns it on.
 option(LUMORA_ENABLE_SPIRV_CROSS "Build the SPIR-V to GLSL ES converter (fetches SPIRV-Cross)" OFF)
