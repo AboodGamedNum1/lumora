@@ -1,0 +1,3 @@
+# LeakSanitizer suppressions for third-party Vulkan loader, ICD and layer allocations made inside
+# vkCreateInstance. Lumora's own allocations are never suppressed.
+leak:libvulkan.so

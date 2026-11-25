@@ -41,6 +41,7 @@ jobs:
         run: python3 tools/ci/test.py --sanitize
         env:
           SDL_VIDEODRIVER: dummy
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/tools/ci/lsan.supp
       - name: Upload test logs on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
