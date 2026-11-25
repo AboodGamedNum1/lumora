@@ -32,7 +32,7 @@ enum class PngStatus {
   BadPalette,   // missing PLTE for colour type 3, bad PLTE length, index beyond the palette, bad tRNS length
   BadZlib,      // bad zlib header, FDICT set, Adler-32 mismatch, or the DEFLATE stream is malformed
   BadFilter,    // filter type above 4, or decoded size does not match the image
-  TooLarge      // width or height above max_dim, pixel count above max_pixels, or inflated size above the limit
+  TooLarge      // width or height above max_dim, or pixel count above max_pixels (checked from the header; inflated data beyond the size the header implies is BadFilter)
 };
 
 struct PngLimits {
