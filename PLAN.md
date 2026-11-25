@@ -2,7 +2,7 @@
 
 This file is the live view of the plan: what is done, what is in progress and what is missing. It is updated at every milestone and whenever the plan changes. The full specification is [LUMORA_MASTER.md](LUMORA_MASTER.md) and the topic documents under [docs/](docs/); where this file and a normative document differ, the normative document wins. Session-level detail is in [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md).
 
-Last updated: 2026-11-25. Current milestone: **M2, Runtime MVP (starting).** M0 and M1 exit criteria as written in docs/milestones.md are met (CI-verified); carry-over items remain, listed in sections 4 and 5.
+Last updated: 2026-11-25. Current milestone: **M3, Scene format and packer (next).** M0 and M1 exit criteria as written in docs/milestones.md are met (CI-verified); carry-over items remain, listed in sections 4 and 5.
 
 ## 1. Vision
 
@@ -29,7 +29,7 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 | M0 | Foundations and CI | done (exit criteria CI-verified, carry-over items open) |
 | M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | source review done (docs/linux-wallpaper-matrix.md); nested-shell run still to do |
 | M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | done: exit criteria met and CI-verified, with first-slice backends and a carry-over list (section 5) |
-| M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | in progress |
+| M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | done: exit criteria met and CI-verified (software evidence on API 29, 34, 36 emulators), with caveats in section 5b |
 | M3 | Scene format and packer | not started |
 | M3S | Vertical slice: 2D parallax scene end to end in CI | not started |
 | M4 | Renderer features (glTF, PBR, 2D, text; shadows, post-FX, particles, video) | not started |
@@ -90,7 +90,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Emulator hello triangle through the RHI | done: an instrumented test on the API 29 x86_64 emulator renders a triangle through the RHI GLES backend and checks pixels (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45639527288). Observed limits: the emulator context is OpenGL ES 3.0 on SwiftShader, not 3.2, and it draws nothing when a constant array is indexed by gl_VertexID, so the emulator test uses an if-chain vertex shader. The GLES backend falls back to an ES 3.x context and a 1x1 pbuffer when EGL 1.5 attributes or surfaceless make-current are not available. Not phone-GPU evidence. |
 | CodeQL | done: workflow for C and C++ runs green on push, pull request and weekly. Result upload to the Security tab needs code scanning enabled on the repository, an owner setting that is not changed here |
 
-## 5b. M2 detail (in progress)
+## 5b. M2 detail (exit criteria met)
 
 | Item | Status |
 |---|---|
@@ -99,7 +99,8 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Crash-loop breaker with safe static mode | CI-verified software evidence: four breaker tests passed on the API 29 emulator job (run 45642599643) |
 | Engine renders through the RHI (window surface) | CI-verified software evidence (run 45652540037): the GLES backend renders into an Android surface through an EGL window surface on API 29, 34 and 36 emulators (SwiftShader), pixels checked via ImageReader. The wallpaper service draws through it and keeps the Canvas path as fallback and for safe mode. The service wiring itself is not run end to end on an emulator, only the native path; the fps overlay is a log line in the RHI path, no on-screen text yet. D3D12 and Vulkan window surfaces are not started |
 | 16 KB, flavors, Direct Boot rule, AAB path checklist items | CI-verified (software evidence): 16 KB alignment check on both flavors, play and full flavors build, Direct Boot rule and process split asserted by an emulator test (run 45648170176). the play AAB builds on every push (run 45650323262, android job green) |
-| Emulator lanes API 29, 34, 36 | API 29, 34 and 36 pass on the emulator (software graphics); 34 and 36 are non-gating until they have passed on main more than once. Lane split in CI: full on 29, 34 and 36, play on 29 and 36 (docs/ci.md); only API 29 full gates. End-to-end service test (set the wallpaper through the shell, read the engine log) exists but is skipped on API 34 and 36 emulators, so the service run on a device is not verified; the native renderer path is |
+| Service end to end on the emulator | CI-verified software evidence (run 45658378405): the real wallpaper service is set as the device wallpaper on API 29, 34 and 36 emulators, starts in its own :engine process, draws through the RHI GLES window surface and logs about 30 frames per second (the frame cap). Pause when hidden is verified only as pure logic, not by hiding the wallpaper on a device. Emulator graphics are SwiftShader, not a phone GPU |
+| Emulator lanes API 29, 34, 36 | CI-verified (run 45658378405): full flavor on 29, 34 and 36, play flavor on 29 and 36 (docs/ci.md). Only API 29 full gates; 34, 36 and play lanes are non-gating until they have been stable longer. The earlier end-to-end test skip is resolved |
 
 ## 6. What is missing overall
 
@@ -165,3 +166,5 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: MW (Windows desktop runtime) added to the plan at the owner's request. Estimate rises by 5-9 weeks. M2 order unchanged.
 - 2026-11-25: Gate G8 (Windows desktop runtime, owner machine) confirmed by the owner, timing later. Play AAB path CI-verified.
 - 2026-11-25: M2 engine path: RHI GLES window surface and wallpaper service drawing through it, CI-verified on emulator lanes 29, 34 and 36 (software evidence).
+- 2026-11-25: M2 exit criteria met and tagged m2-done. Service runs end to end on the API 29, 34 and 36 emulators in CI (software evidence). Caveats: pause when hidden is logic-tested only; fps overlay is a log line in the RHI path; real display, lock screen and phone GPU are untested (gates G1 and G3).
+- 2026-11-25: M2 boundary re-estimate: no change to the 85-144 week range yet. M0 to M2 were completed far faster in elapsed time than the one-developer weeks in the table, but that does not carry over to the later milestones, which depend on real-device gates and owner availability. The next re-estimate stays at the M4 boundary. Scope cuts remain the owner's call.
