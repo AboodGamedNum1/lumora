@@ -15,6 +15,8 @@
 //    translated by view.offset * (1 - d) * kParallaxRange in scene space.
 //  * Draw order: depth-first pre-order over the node tree, later nodes over earlier ones, source-over blending.
 //  * Sampling: bilinear with texel centres at half-integers, outside the quad is transparent (no tiling).
+//    Inside the quad, coordinates beyond the outermost texel centres clamp to the edge texel (hard cut at the edge).
+//  * Positive view.offset_y moves layers up (scene y is up). PPM P6 input must have exactly 3*w*h raster bytes.
 //  * Output is bit-exact reproducible for the same inputs on the same compiler; across compilers goldens use
 //    the tolerance helpers in tests/golden.h.
 #pragma once
