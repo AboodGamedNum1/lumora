@@ -95,7 +95,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 |---|---|
 | WallpaperService in its own process, protected by BIND_WALLPAPER, wallpaper metadata | done as a first slice (declared and checked by an instrumented test on the API 29 emulator). The scene is a software Canvas animation, not the core renderer yet |
 | Frame pacing with a cap, visibility, surface and screen-off pause rules, fps overlay | done as pure logic with device tests (CI-verified on the API 29 emulator). Not yet verified on a real display or at the lock screen |
-| Crash-loop breaker with safe static mode | first slice written, tested by instrumented tests on the emulator once CI is green |
+| Crash-loop breaker with safe static mode | CI-verified software evidence: four breaker tests passed on the API 29 emulator job (run 45642599643) |
 | Engine renders through the RHI (window surface) | not started |
 | 16 KB, flavors, Direct Boot rule, AAB path checklist items | 16 KB alignment checked since M0; flavors, Direct Boot rule and AAB path not started |
 | Emulator lanes API 29, 34, 36 | API 29 only so far |
