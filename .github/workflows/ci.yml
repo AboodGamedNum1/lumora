@@ -166,9 +166,9 @@ jobs:
         working-directory: android
         # Maven Central rate-limits hosted runners now and then (HTTP 429), so retry the download.
         run: |
-          for i in 1 2 3; do ./gradlew --no-daemon assembleRelease assembleDebug && exit 0; sleep 30; done; exit 1
+          for i in 1 2 3; do ./gradlew --no-daemon assembleFullRelease assemblePlayRelease assembleFullDebug && exit 0; sleep 30; done; exit 1
       - name: Check ABI set and 16 KB alignment
-        run: python3 tools/ci/check_apk.py android/app/build/outputs/apk/release/app-release-unsigned.apk
+        run: python3 tools/ci/check_apk.py android/app/build/outputs/apk/full/release/app-full-release-unsigned.apk && python3 tools/ci/check_apk.py android/app/build/outputs/apk/play/release/app-play-release-unsigned.apk
       - name: Upload build reports on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -209,7 +209,7 @@ jobs:
       - name: Pre-fetch Gradle dependencies and build test APKs (retried, Maven Central rate limits)
         working-directory: android
         run: |
-          for i in 1 2 3 4; do ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest && exit 0; sleep 60; done; exit 1
+          for i in 1 2 3 4; do ./gradlew --no-daemon assembleFullDebug assembleFullDebugAndroidTest && exit 0; sleep 60; done; exit 1
       - name: Instrumented test on emulator (x86_64, software graphics, test-only ABI)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -217,7 +217,7 @@ jobs:
           arch: x86_64
           target: default
           working-directory: android
-          script: ./gradlew --no-daemon connectedDebugAndroidTest || ./gradlew --no-daemon connectedDebugAndroidTest
+          script: ./gradlew --no-daemon connectedFullDebugAndroidTest || ./gradlew --no-daemon connectedFullDebugAndroidTest
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

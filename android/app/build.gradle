@@ -23,6 +23,16 @@ android {
         }
     }
 
+    buildFeatures { buildConfig true }
+
+    // Two distribution flavors from day one (docs/lua-api.md, Build flavors). They differ only in
+    // the DISTRIBUTION constant for now; permission-bearing features arrive in M6 and M8.
+    flavorDimensions 'distribution'
+    productFlavors {
+        play { dimension 'distribution'; buildConfigField 'String', 'DISTRIBUTION', '"play"' }
+        full { dimension 'distribution'; buildConfigField 'String', 'DISTRIBUTION', '"full"' }
+    }
+
     buildTypes {
         release {
             // Only arm64-v8a ships (D25). x86_64 exists in debug builds for the emulator only.
