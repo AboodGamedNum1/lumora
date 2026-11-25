@@ -70,3 +70,5 @@ target_compile_definitions(lumora_tests PRIVATE
 add_test(NAME lumora_tests COMMAND lumora_tests)
 
 add_subdirectory(scene)
+add_subdirectory(render2d)
+add_subdirectory(deflate)
