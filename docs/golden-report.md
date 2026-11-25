@@ -23,7 +23,7 @@ python3 tools/golden/golden_report.py --actual-dir DIR --baseline-dir DIR \
 | `--max-failures` | Write images for at most this many scenes. Default 20. The table always lists every non-pass scene. |
 | `--verbose` | Also list passing scenes in the table. |
 
-Exit codes: 0 all scenes pass, 1 at least one scene did not pass (or a name was rejected, or the file limit was hit),
+Exit codes: 0 all scenes pass, 1 at least one scene did not pass (or a name was rejected, or the file limit was hit), 2 when no actual file was found at all (a setup error, never a silent pass),
 2 usage error, unreadable folder or a write failure.
 
 ## Inputs and outputs

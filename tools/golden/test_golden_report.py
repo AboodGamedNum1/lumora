@@ -216,7 +216,7 @@ class ReportTests(Base):
 
     def test_empty_folder(self):
         code, text, _ = self.run_tool()
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 2)
         self.assertIn("nothing was compared", text)
 
     def test_report_file(self):

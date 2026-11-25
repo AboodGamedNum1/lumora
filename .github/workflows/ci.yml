@@ -37,6 +37,8 @@ jobs:
       - name: Record toolchain versions
         run: |
           cmake --version | head -1; ninja --version; g++ --version | head -1; python3 --version
+      - name: Python tool tests (golden report, ppm diff)
+        run: python3 -m unittest discover -s tools/golden
       - name: Build and test (ASan and UBSan)
         run: python3 tools/ci/test.py --sanitize
         env:
@@ -44,6 +46,16 @@ jobs:
           # Leak detection is off: the software Vulkan driver (llvmpipe) leaves small allocations in
           # unsymbolized third-party modules, with no Lumora frame. ASan memory-error checks and UBSan stay on.
           ASAN_OPTIONS: detect_leaks=0
+      - name: Golden failure report (diagnostic only)
+        if: failure()
+        run: |
+          for r in cpu-reference; do
+            if [ -d build/golden-out/$r ]; then
+              python3 tools/golden/golden_report.py --actual-dir build/golden-out/$r --baseline-dir tests/golden/$r \
+                --report-md build/golden-out/report-$r.md --images-dir build/golden-out/report-images-$r || true
+              cat build/golden-out/report-$r.md >> "$GITHUB_STEP_SUMMARY" || true
+            fi
+          done
       - name: Upload golden images and test logs
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

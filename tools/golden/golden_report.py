@@ -9,7 +9,8 @@ Every <name>.actual.ppm in the actual folder (not recursive) is compared with <b
 .diff.ppm files are ignored: the comparison is recomputed with ppm_diff.py. The report is diagnostic only. It does
 not change CI pass or fail and it is not evidence that a renderer is correct.
 
-Exit codes: 0 all scenes pass, 1 at least one scene did not pass, 2 usage error or unreadable folder.
+Exit codes: 0 all scenes pass, 1 at least one scene did not pass, 2 usage error, unreadable folder or no actual
+files at all (nothing was compared).
 The folders hold untrusted data (pull request artifacts): names are checked, sizes are capped, nothing from them is
 imported or executed, and the tool uses no network and no subprocess. Only the Python standard library is used.
 """
@@ -344,6 +345,8 @@ def run(args, out=sys.stdout, err=sys.stderr):
             return 2
     else:
         out.write(text)
+    if not rows and not rejected:
+        return 2  # nothing to compare is a setup error, never a silent pass
     return 0 if not ordered_failed and not rejected and not not_processed else 1
 
 
