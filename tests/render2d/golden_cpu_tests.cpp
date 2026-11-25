@@ -182,9 +182,19 @@ golden::Image render_golden(const Case& c) {
   return golden::from_rgba(img.rgba.data(), img.width, img.height);
 }
 
+// Same rule as tests/golden.h: LUMORA_BLESS_GOLDEN=1 means bless mode. MSVC flags std::getenv (C4996), so it
+// uses _dupenv_s there.
 bool bless_mode() {
+#ifdef _MSC_VER
+  char* value = nullptr;
+  std::size_t length = 0;
+  const bool on = _dupenv_s(&value, &length, "LUMORA_BLESS_GOLDEN") == 0 && value != nullptr && *value == '1';
+  std::free(value);
+  return on;
+#else
   const char* b = std::getenv("LUMORA_BLESS_GOLDEN");
   return b && *b == '1';
+#endif
 }
 
 // Fresh, unique folder in the system temp directory for the negative tests. Removed when it goes out of scope.
