@@ -68,3 +68,5 @@ target_compile_definitions(lumora_tests PRIVATE
   LUMORA_GOLDEN_OUT_DIR="${CMAKE_BINARY_DIR}/golden-out")
 
 add_test(NAME lumora_tests COMMAND lumora_tests)
+
+add_subdirectory(scene)

@@ -30,7 +30,7 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 | M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | source review done (docs/linux-wallpaper-matrix.md); nested-shell run still to do |
 | M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | done: exit criteria met and CI-verified, with first-slice backends and a carry-over list (section 5) |
 | M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | done: exit criteria met and CI-verified (software evidence on API 29, 34, 36 emulators), with caveats in section 5b |
-| M3 | Scene format and packer | not started |
+| M3 | Scene format and packer | in progress: JSON model and manifest parsing done (CI-verified once green); packer, loader, checksums, sample scene not started |
 | M3S | Vertical slice: 2D parallax scene end to end in CI | not started |
 | M4 | Renderer features (glTF, PBR, 2D, text; shadows, post-FX, particles, video) | not started |
 | M5 | Scripting: Lua sandbox, cancellation and recovery | not started |
@@ -168,3 +168,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: M2 engine path: RHI GLES window surface and wallpaper service drawing through it, CI-verified on emulator lanes 29, 34 and 36 (software evidence).
 - 2026-11-25: M2 exit criteria met and tagged m2-done. Service runs end to end on the API 29, 34 and 36 emulators in CI (software evidence). Caveats: pause when hidden is logic-tested only; fps overlay is a log line in the RHI path; real display, lock screen and phone GPU are untested (gates G1 and G3).
 - 2026-11-25: M2 boundary re-estimate: no change to the 85-144 week range yet. M0 to M2 were completed far faster in elapsed time than the one-developer weeks in the table, but that does not carry over to the later milestones, which depend on real-device gates and owner availability. The next re-estimate stays at the M4 boundary. Scope cuts remain the owner's call.
+- 2026-11-25: M3 started: dependency-free JSON model and manifest.json parsing with version policy (docs/format.md section 8.7). Package entry policy and JSON limits modules are with a contributor.

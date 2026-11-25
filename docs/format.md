@@ -63,3 +63,21 @@ Validators and fuzzers need numbers as targets, so every cap that other sections
 Supported glTF extensions are an allowlist, finalized at M3. Initial candidate list (from general knowledge, **unverified** against the current Khronos registry): `KHR_texture_basisu`, `KHR_mesh_quantization`, `KHR_materials_unlit`, `KHR_lights_punctual`, `KHR_texture_transform`, `EXT_meshopt_compression`. Anything not on the list is rejected at import with a clear message.
 
 Skinning limits (maximum joints per skin, maximum influences per vertex) are pinned at M3 against the measured uniform-buffer limits of the Mali-G76 reference phone, not assumed. Skins above the limit are rejected at import, or split by the importer if a tested splitting rule exists.
+
+### 8.7 manifest.json fields (M3 first slice)
+
+Implemented in `core/scene/manifest.h` and covered by `tests/scene/scene_tests.cpp`. These names are the first concrete draft of the manifest; the rest of section 8 stays normative.
+
+| Field | Type | Rule |
+|---|---|---|
+| `format_version` | whole number | required, at least 1; larger than the engine supports is rejected |
+| `scene_schema_version` | whole number | required, same rule |
+| `lua_api_version` | whole number | required, same rule |
+| `min_engine_version` | string `major.minor.patch` | required; a newer engine than this build is rejected |
+| `name` | string | required, 1 to 128 bytes |
+| `author` | string | optional, at most 128 bytes |
+| `entry.scene` | package-relative path | required |
+| `entry.settings` | package-relative path | optional |
+| `backends` | array of `vulkan`, `gles`, `d3d12` | optional; absent means a full multi-platform package; an unknown name is rejected |
+
+Unknown fields are ignored (section 8.1). Entry paths must not be empty, absolute, contain a drive prefix, backslashes, control characters, or `.`, `..` or empty components. The full archive entry policy is `core/package/entry_policy.h`.
