@@ -101,6 +101,8 @@ SettingsParseResult parse_settings_schema(const std::string& json_text);
 
 using SettingsValues = std::map<std::string, SettingValue>;  // key: setting id
 
+// UnknownSetting is returned only for a definition with an empty id (a definition is always a known setting).
+// NotOnStep means the nearest step-grid point lies above max, so the value cannot be snapped inside the range.
 enum class ValueCheck { Ok, UnknownSetting, WrongType, OutOfRange, NotOnStep, UnknownOption, BadColor };
 
 // Validates (and, for step grids, snaps) one value against its definition. On Ok, `value` may have been snapped.
@@ -117,7 +119,8 @@ SettingsValues migrate_values(const SettingsSchema& schema, std::uint32_t stored
 // True when the setting should be shown given the current values (visible_if rule; no rule means visible).
 bool is_visible(const SettingsSchema& schema, const SettingDef& def, const SettingsValues& values);
 
-// Reset action: restores defaults except for settings marked "keep"; `scope_filter` limits it to one scope.
+// Reset action: restores defaults except for settings marked "keep"; with only_scene_scope set, device-scope
+// settings are left alone.
 SettingsValues reset_values(const SettingsSchema& schema, const SettingsValues& current, bool only_scene_scope = true);
 
 }  // namespace lumora::scene
