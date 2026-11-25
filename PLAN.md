@@ -68,7 +68,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Branch protection requiring green CI (owner repository setting) | not started, repository settings are not changed by the agent |
 | NDK choice for 16 KB alignment | done (NDK 27.2.12479018 with flexible page sizes flag; alignment checked in CI) |
 | DXC and glslang version pins | partly: SPIRV-Cross and DXC pins recorded in docs/dependency-manifest.md, not yet consumed by CI; glslang observed 15.1.0 |
-| WARP and software-Vulkan-on-Windows spike | WARP done. Software Vulkan on Windows: a lavapipe ICD for x64 is available in the pinned third-party Mesa build (mesa3d 26.3.1 msvc package, sha256 64E84CF1...B3F1 observed in CI), the runner has the Vulkan loader but no SDK. Download and extract verified in CI; still to do: Vulkan headers for the Windows build and a test run with the ICD selected (CI-verified only once it runs) |
+| WARP and software-Vulkan-on-Windows spike | done: WARP D3D12 works (see above). Software Vulkan on Windows works: the Vulkan backend builds against the system loader (spike option, pinned Vulkan headers) and the Vulkan tests pass on the Windows runner with a pinned Mesa lavapipe ICD registered in the registry (the loader ignores environment overrides when elevated). Label: CI-verified software evidence, no validation layer on Windows, never RX 570 evidence. Run: https://github.com/Captain3BoOd/lumora/actions/runs/45634033800 |
 | GNOME spike start | done: source review of the reference extension recorded in docs/linux-wallpaper-matrix.md |
 | Feature-test header check for `docs/cpp-standard.md` | not started |
 
