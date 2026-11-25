@@ -75,7 +75,10 @@ jobs:
           cmake -S . -B build-vk -DLUMORA_BUILD_EDITOR=OFF -DLUMORA_WIN_VULKAN_SPIKE=ON "-DLUMORA_PRECOMPILED_SPV_DIR=$PWD/tests/shaders/precompiled"
           cmake --build build-vk --config Release --parallel
           $env:VK_DRIVER_FILES = "$PWD\mesa\x64\lvp_icd.x86_64.json"
-          $env:VK_ICD_FILENAMES = $env:VK_DRIVER_FILES
+          # The loader ignores environment overrides in an elevated process (the runner is admin),
+          # so the ICD manifest is registered in the Khronos registry key instead.
+          New-Item -Path "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers" -Force | Out-Null
+          New-ItemProperty -Path "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers" -Name $env:VK_DRIVER_FILES -PropertyType DWord -Value 0 -Force | Out-Null
           $env:VK_LOADER_DEBUG = "error,warn,driver"
           Test-Path $env:VK_DRIVER_FILES
           Get-Content $env:VK_DRIVER_FILES
