@@ -94,10 +94,10 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 
 | Item | Status |
 |---|---|
-| WallpaperService in its own process, protected by BIND_WALLPAPER, wallpaper metadata | done as a first slice (declared and checked by an instrumented test on the API 29 emulator). The scene is a software Canvas animation, not the core renderer yet |
+| WallpaperService in its own process, protected by BIND_WALLPAPER, wallpaper metadata | done as a first slice (declared and checked by an instrumented test on the API 29 emulator). The service now draws through the RHI, with the Canvas animation as fallback |
 | Frame pacing with a cap, visibility, surface and screen-off pause rules, fps overlay | done as pure logic with device tests (CI-verified on the API 29 emulator). Not yet verified on a real display or at the lock screen |
 | Crash-loop breaker with safe static mode | CI-verified software evidence: four breaker tests passed on the API 29 emulator job (run 45642599643) |
-| Engine renders through the RHI (window surface) | not started |
+| Engine renders through the RHI (window surface) | CI-verified software evidence (run 45652540037): the GLES backend renders into an Android surface through an EGL window surface on API 29, 34 and 36 emulators (SwiftShader), pixels checked via ImageReader. The wallpaper service draws through it and keeps the Canvas path as fallback and for safe mode. The service wiring itself is not run end to end on an emulator, only the native path; the fps overlay is a log line in the RHI path, no on-screen text yet. D3D12 and Vulkan window surfaces are not started |
 | 16 KB, flavors, Direct Boot rule, AAB path checklist items | CI-verified (software evidence): 16 KB alignment check on both flavors, play and full flavors build, Direct Boot rule and process split asserted by an emulator test (run 45648170176). the play AAB builds on every push (run 45650323262, android job green) |
 | Emulator lanes API 29, 34, 36 | API 29, 34 and 36 pass on the emulator (software graphics); 34 and 36 are non-gating until they have passed on main more than once. Lane split for play flavor (29 and 36 only, docs/ci.md) not done: only full runs |
 
@@ -164,3 +164,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: M1 exit criteria met (Vulkan on lavapipe in Linux and Windows CI, GLES on llvmpipe and on the API 29 emulator, D3D12 on WARP, golden images, CodeQL). Carry-over listed in section 6. M2 started.
 - 2026-11-25: MW (Windows desktop runtime) added to the plan at the owner's request. Estimate rises by 5-9 weeks. M2 order unchanged.
 - 2026-11-25: Gate G8 (Windows desktop runtime, owner machine) confirmed by the owner, timing later. Play AAB path CI-verified.
+- 2026-11-25: M2 engine path: RHI GLES window surface and wallpaper service drawing through it, CI-verified on emulator lanes 29, 34 and 36 (software evidence).
