@@ -10,13 +10,20 @@ namespace {
 
 // Renders a clear plus a red triangle through the RHI on the given backend and checks a few pixels.
 // Returns "OK <device>" or an error text.
-std::string rhi_triangle(lumora::rhi::Backend backend) {
+std::string rhi_triangle(lumora::rhi::Backend backend, bool if_chain) {
   using namespace lumora::rhi;
   std::string err;
   auto dev = create_device({backend, false}, &err);
   if (!dev) return "no device: " + err;
   PipelineDesc pd;
-  pd.vertex_glsl =
+  pd.vertex_glsl = if_chain ?
+      "#version 300 es\n"
+      "void main() {\n"
+      "  vec2 p = vec2(-0.8, -0.8);\n"
+      "  if (gl_VertexID == 0) p = vec2(0.0, 0.8);\n"
+      "  if (gl_VertexID == 1) p = vec2(0.8, -0.8);\n"
+      "  gl_Position = vec4(p, 0.0, 1.0);\n"
+      "}\n" :
       "#version 300 es\n"
       "void main() {\n"
       "  vec2 p[3] = vec2[](vec2(0.0, 0.8), vec2(0.8, -0.8), vec2(-0.8, -0.8));\n"
@@ -63,5 +70,10 @@ Java_dev_lumora_app_NativeBridge_versionString(JNIEnv* env, jobject /*thiz*/) {
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_dev_lumora_app_NativeBridge_glesTriangle(JNIEnv* env, jobject /*thiz*/) {
-  return env->NewStringUTF(rhi_triangle(lumora::rhi::Backend::Gles).c_str());
+  std::string r = rhi_triangle(lumora::rhi::Backend::Gles, false);
+  if (r.rfind("OK", 0) != 0) {
+    const std::string second = rhi_triangle(lumora::rhi::Backend::Gles, true);
+    r += " | if-chain variant: " + second;
+  }
+  return env->NewStringUTF(r.c_str());
 }

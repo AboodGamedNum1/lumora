@@ -297,6 +297,11 @@ void GlesCommandBuffer::begin_render_pass(Handle color, const float clear[4]) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
     glViewport(0, 0, static_cast<GLsizei>(t->width), static_cast<GLsizei>(t->height));
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor(c[0], c[1], c[2], c[3]);
     glClear(GL_COLOR_BUFFER_BIT);
     return true;
