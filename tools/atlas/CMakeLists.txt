@@ -1,4 +1,5 @@
-add_executable(lumora_atlas atlas_tool.cpp)
+add_executable(lumora_atlas atlas_tool.cpp atlas_cli.cpp atlas_cli.h)
 target_link_libraries(lumora_atlas PRIVATE lumora_core)
+target_include_directories(lumora_atlas PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(lumora_atlas PROPERTIES OUTPUT_NAME lumora-atlas)
 lumora_target_warnings(lumora_atlas)
