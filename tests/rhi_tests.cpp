@@ -8,6 +8,13 @@
 #include "triangle_vert_spv.h"
 #define LUMORA_VULKAN_RENDER_TEST 1
 #endif
+#if defined(LUMORA_HAS_SPIRV_CROSS) && defined(LUMORA_HAS_TEST_SHADERS)
+#include "spirv_to_gles.h"
+#ifndef LUMORA_VULKAN_RENDER_TEST
+#include "triangle_frag_spv.h"
+#include "triangle_vert_spv.h"
+#endif
+#endif
 #if defined(LUMORA_HAS_D3D12) && defined(LUMORA_HAS_TEST_DXIL)
 #include "triangle_ps_dxil.h"
 #include "triangle_vs_dxil.h"
@@ -171,5 +178,28 @@ TEST_CASE("gles on a software context renders a clear and a triangle and reads t
       "out vec4 out_color;\n"
       "void main() { out_color = vec4(1.0, 0.0, 0.0, 1.0); }\n";
   run_triangle_test(Backend::Gles, pd, "llvmpipe-gles");
+}
+#endif
+
+#if defined(LUMORA_GLES_RENDER_TEST) && defined(LUMORA_HAS_SPIRV_CROSS) && defined(LUMORA_HAS_TEST_SHADERS)
+TEST_CASE("the Vulkan SPIR-V triangle converts through SPIRV-Cross and renders on GLES like the hand-written one") {
+  const auto v = spirv_to_glsl_es(triangle_vert_spv, sizeof(triangle_vert_spv) / 4, ShaderStage::Vertex);
+  const auto f = spirv_to_glsl_es(triangle_frag_spv, sizeof(triangle_frag_spv) / 4, ShaderStage::Fragment);
+  INFO(v.error << f.error);
+  REQUIRE(v.ok);
+  REQUIRE(f.ok);
+  CHECK(v.source.rfind("#version 300 es", 0) == 0);
+  PipelineDesc pd;
+  pd.vertex_glsl = v.source;
+  pd.fragment_glsl = f.source;
+  run_triangle_test(Backend::Gles, pd, "llvmpipe-gles");
+}
+
+TEST_CASE("the SPIR-V converter rejects garbage") {
+  const std::uint32_t junk[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  CHECK_FALSE(spirv_to_glsl_es(junk, 8, ShaderStage::Vertex).ok);
+  CHECK_FALSE(spirv_to_glsl_es(nullptr, 0, ShaderStage::Fragment).ok);
+  const std::uint32_t header_only[5] = {0x07230203u, 0x00010300u, 0, 1, 0};
+  CHECK_FALSE(spirv_to_glsl_es(header_only, 5, ShaderStage::Vertex).ok);
 }
 #endif

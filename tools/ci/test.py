@@ -26,6 +26,8 @@ def main():
     cfg = ["cmake", "-S", ".", "-B", a.build_dir, "-DCMAKE_BUILD_TYPE=" + a.config]
     if shutil.which("ninja") and os.name != "nt":
         cfg += ["-G", "Ninja"]
+    if os.name != "nt":
+        cfg += ["-DLUMORA_ENABLE_SPIRV_CROSS=ON"]  # SPIR-V to GLSL ES path, tested on GLES (llvmpipe)
     if a.sanitize:
         cfg += ["-DLUMORA_SANITIZE=ON"]
     run(cfg)
