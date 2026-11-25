@@ -2,6 +2,7 @@
 // Pure functions on names and sizes. No ZIP library, no file system, no allocation limits
 // beyond std::string. The ZIP reader (later milestone) calls these before it touches an entry.
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
