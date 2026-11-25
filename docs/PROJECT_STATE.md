@@ -9,6 +9,7 @@ last_updated: 2026-11-25
 M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table in `PLAN.md`.
 
 ## Done
+- M1 step 4: golden-image harness with tolerance and a lavapipe triangle baseline, https://github.com/Captain3BoOd/lumora/actions/runs/45590514447.
 - M1 step 3: Vulkan command recording, render pass, pipeline, pixel-checked triangle on lavapipe, validation layer asserted active, https://github.com/Captain3BoOd/lumora/actions/runs/45587423739.
 - M1 step 2: Vulkan backend first slice (device, validation, buffers, textures) CI-verified on lavapipe, https://github.com/Captain3BoOd/lumora/actions/runs/45573393813.
 - M1 step 1: RHI interface, Null backend and tests; WARP D3D12 spike worked (WARP software evidence), https://github.com/Captain3BoOd/lumora/actions/runs/45570530990.

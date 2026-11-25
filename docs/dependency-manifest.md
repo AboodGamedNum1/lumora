@@ -25,4 +25,4 @@ Read from the CI run for commit 8b14281 (https://github.com/Captain3BoOd/lumora/
 | Python | 3.12.3 | runner default | runner default |
 | Gradle / AGP / Kotlin / JDK | n/a | n/a | 8.11.1 / 8.7.3 / 2.0.21 / Temurin 17.0.21 |
 
-DXC and glslang pins are not made yet (they arrive with the shader pipeline, M1).
+Shader and Vulkan test tools on the Linux job, installed from the Ubuntu 24.04 archive and recorded as observed (not yet hard-pinned): glslang-tools 15.1.0 (glslangValidator compiles the test shaders to SPIR-V), Vulkan validation layers 1.3.275, Vulkan headers and loader 1.3.275, Mesa 25.2.8 (lavapipe). Hard pins (a source build or container image) and SPIRV-Cross and DXC pins are still to do and arrive with the shader pipeline.

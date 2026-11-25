@@ -80,11 +80,11 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | WARP D3D12 spike on the Windows runner | done: a D3D12 device at feature level 12_0 on the WARP adapter, a render-target clear, copy and CPU readback all worked. Evidence label: WARP software evidence, CI-verified, never RX 570 evidence. Run: https://github.com/Captain3BoOd/lumora/actions/runs/45570530990. D3D12 backend state stays not implemented until the backend exists. |
 | Software Vulkan on Windows spike | not started |
 | GNOME wallpaper-method spike (source review, nested shell) | not started |
-| Shader toolchain pins (glslang, SPIRV-Cross, DXC) | not started |
+| Shader toolchain pins (glslang, SPIRV-Cross, DXC) | partly: glslang 15.1.0, validation layers and Mesa versions recorded as observed (Ubuntu packages), not hard-pinned; SPIRV-Cross and DXC not started |
 | Vulkan backend: instance, device, validation layer (logged active and asserted in the test), named buffers and textures, command recording, one render pass (clear and store), graphics pipeline from SPIR-V, submit and fence wait, texture readback | done as a first slice (CI-verified on the lavapipe software driver, run https://github.com/Captain3BoOd/lumora/actions/runs/45587423739). A test renders a clear plus a triangle and checks pixels, with zero validation messages. Missing: swapchain, descriptor sets and bindings, vertex buffers, depth, blending, sync beyond a fence, pipeline cache, other formats. |
 | GLES 3.2 backend | not started |
 | D3D12 backend build, link and DXIL on Windows CI | not started |
-| Golden-image harness (lavapipe baseline, tolerance compare, diff artifacts, see `docs/golden-images.md`) | done, CI result pending in the next run |
+| Golden-image harness (lavapipe baseline, tolerance compare, diff artifacts, see `docs/golden-images.md`) | done (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45590514447) |
 | Emulator hello triangle through the RHI | not started |
 | CodeQL | not started |
 
@@ -110,4 +110,5 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: M0 exit criteria met and recorded.
 - 2026-11-25: M1 started: RHI interface and Null backend, WARP spike result.
 - 2026-11-25: Vulkan backend first slice on lavapipe in Linux CI.
+- 2026-11-25: Golden-image harness and first lavapipe baseline.
 - 2026-11-25: Vulkan command recording, render pass, pipeline and pixel-checked triangle in CI. Leak detection is off in the ASan job because of third-party driver allocations (see ci.yml).
