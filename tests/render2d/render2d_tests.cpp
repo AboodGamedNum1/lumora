@@ -8,6 +8,7 @@
 
 #include "cpu_renderer.h"
 #include "pack_dir.h"
+#include "png.h"
 
 using namespace lumora::render2d;
 using lumora::scene::Node;
@@ -358,4 +359,35 @@ TEST_CASE("load_textures reports missing and corrupt assets by name", "[render2d
   files["assets/sky.ppm"] = bytes("P3\n1 1\n255\n1 2 3\n");
   REQUIRE(load_textures(s, files, out, err));  // non-texture kinds are ignored
   CHECK(out.size() == 1);
+}
+
+TEST_CASE("load_textures decodes PNG by signature and reports PNG errors by asset", "[render2d][png]") {
+  lumora::image::Rgba8 src;
+  src.width = 2;
+  src.height = 1;
+  src.rgba = {10, 20, 30, 255, 40, 50, 60, 128};
+  const auto png = lumora::image::encode_png(src);
+  REQUIRE_FALSE(png.empty());
+  Scene s;
+  s.assets = {{"tex", "texture", "assets/tex.png"}};
+  lumora::scene::FileMap files;
+  files["assets/tex.png"] = png;
+  TextureMap out;
+  std::string err;
+  REQUIRE(load_textures(s, files, out, err));
+  REQUIRE(out.count("tex") == 1);
+  CHECK(out["tex"].width == 2);
+  CHECK(out["tex"].height == 1);
+  CHECK(out["tex"].rgba == src.rgba);
+  // A damaged PNG is reported by asset name, and nothing is kept.
+  auto bad = png;
+  bad[bad.size() / 2] ^= 0xFF;
+  files["assets/tex.png"] = bad;
+  CHECK_FALSE(load_textures(s, files, out, err));
+  CHECK(err.find("tex") != std::string::npos);
+  CHECK(err.find("png") != std::string::npos);
+  CHECK(out.empty());
+  // A file name ending in .png whose content is a PPM still decodes as a PPM.
+  files["assets/tex.png"] = bytes("P3\n1 1\n255\n1 2 3\n");
+  CHECK(load_textures(s, files, out, err));
 }

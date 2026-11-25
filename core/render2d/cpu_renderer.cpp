@@ -3,6 +3,8 @@
 // source-over into the 8-bit RGBA buffer, layer by layer, rounding to 8 bits after each layer.
 #include "cpu_renderer.h"
 
+#include "png.h"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -273,7 +275,21 @@ bool load_textures(const lumora::scene::Scene& scene, const lumora::scene::FileM
     }
     Image img;
     std::string why;
-    if (!decode_ppm(it->second.data(), it->second.size(), img, why)) {
+    // The format is chosen by content, not by the file name: the PNG signature selects the PNG codec, anything else is
+    // handed to the PPM decoder (which rejects what it does not understand).
+    static const std::uint8_t kPngSignature[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    const bool is_png = it->second.size() >= 8 && std::equal(kPngSignature, kPngSignature + 8, it->second.begin());
+    if (is_png) {
+      lumora::image::PngResult png = lumora::image::decode_png(it->second.data(), it->second.size());
+      if (!png.ok()) {
+        error = "texture asset '" + asset.id + "': png: " + png.message;
+        out.clear();
+        return false;
+      }
+      img.width = png.image.width;
+      img.height = png.image.height;
+      img.rgba = std::move(png.image.rgba);
+    } else if (!decode_ppm(it->second.data(), it->second.size(), img, why)) {
       error = "texture asset '" + asset.id + "': " + why;
       out.clear();
       return false;

@@ -45,7 +45,7 @@ bool decode_ppm(const std::uint8_t* data, std::size_t size, Image& out, std::str
 
 using TextureMap = std::map<std::string, Image>;  // key: asset id from scene.json
 
-// Decodes every asset of `files` that scene.assets lists (kind "texture", .ppm) into a TextureMap.
+// Decodes every asset of `files` that scene.assets lists (kind "texture"; PNG by signature, otherwise PPM) into a TextureMap.
 // False and an error naming the asset when one is missing or does not decode.
 bool load_textures(const lumora::scene::Scene& scene, const lumora::scene::FileMap& files, TextureMap& out,
                    std::string& error);
