@@ -62,3 +62,25 @@ jobs:
           name: lumora-editor-windows-smoke
           path: build/editor/Release/lumora_editor.exe
           retention-days: 3
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install pinned NDK and CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+          java -version
+      - name: Build release APK and debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease assembleDebug
+      - name: Check ABI set and 16 KB alignment
+        run: python3 tools/ci/check_apk.py android/app/build/outputs/apk/release/app-release-unsigned.apk
+      - name: Upload build reports on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-logs
+          path: android/app/build/reports
+          retention-days: 7
