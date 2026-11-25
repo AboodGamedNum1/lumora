@@ -25,6 +25,9 @@ android {
 
     buildFeatures { buildConfig true }
 
+    // The packed sample scene (samples/aurora.lumora) is an asset of the instrumented tests only.
+    sourceSets { androidTest { assets.srcDirs = ['../../samples'] } }
+
     // Two distribution flavors from day one (docs/lua-api.md, Build flavors). They differ only in
     // the DISTRIBUTION constant for now; permission-bearing features arrive in M6 and M8.
     flavorDimensions 'distribution'

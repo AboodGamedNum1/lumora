@@ -4,9 +4,12 @@
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "lumora/rhi/rhi.h"
+#include "cpu_renderer.h"
 #include "lumora/version.h"
+#include "zip_store.h"
 
 namespace {
 
@@ -186,4 +189,34 @@ Java_dev_lumora_app_NativeBridge_engineFrame(JNIEnv* /*env*/, jobject /*thiz*/, 
 extern "C" JNIEXPORT void JNICALL
 Java_dev_lumora_app_NativeBridge_engineDestroy(JNIEnv* /*env*/, jobject /*thiz*/, jlong handle) {
   delete reinterpret_cast<Renderer*>(handle);
+}
+
+// Loads a .lumora package from bytes (ZIP, checksums, manifest, scene, textures) and renders it with the CPU
+// reference renderer at 128x128. Returns "OK <name> <files>" followed by four sample pixels, or "ERR <why>".
+// Software evidence only: it proves the loader and renderer run on the emulator CPU, nothing about a GPU.
+extern "C" JNIEXPORT jstring JNICALL
+Java_dev_lumora_app_NativeBridge_renderPackage(JNIEnv* env, jobject /*thiz*/, jbyteArray bytes) {
+  using namespace lumora;
+  const jsize n = env->GetArrayLength(bytes);
+  std::vector<std::uint8_t> z(static_cast<std::size_t>(n));
+  env->GetByteArrayRegion(bytes, 0, n, reinterpret_cast<jbyte*>(z.data()));
+  auto zr = scene::read_zip_store(z.data(), z.size());
+  if (!zr.ok) return env->NewStringUTF(("ERR archive: " + zr.error).c_str());
+  auto lr = scene::load_package(zr.files);
+  if (!lr.ok()) return env->NewStringUTF(("ERR package: " + lr.message).c_str());
+  render2d::TextureMap tex;
+  std::string err;
+  if (!render2d::load_textures(lr.scene, zr.files, tex, err)) return env->NewStringUTF(("ERR textures: " + err).c_str());
+  render2d::View v;
+  v.width = v.height = 128;
+  const auto img = render2d::render_scene(lr.scene, tex, v);
+  if (!img.valid()) return env->NewStringUTF("ERR render");
+  std::string out = "OK " + lr.manifest.name + " files=" + std::to_string(zr.files.size());
+  const int pts[4][2] = {{64, 2}, {64, 125}, {10, 64}, {64, 64}};
+  for (const auto& p : pts) {
+    const std::uint8_t* q = &img.rgba[(static_cast<std::size_t>(p[1]) * img.width + static_cast<std::size_t>(p[0])) * 4];
+    out += " " + std::to_string(p[0]) + "," + std::to_string(p[1]) + "=" + std::to_string(q[0]) + "," +
+           std::to_string(q[1]) + "," + std::to_string(q[2]) + "," + std::to_string(q[3]);
+  }
+  return env->NewStringUTF(out.c_str());
 }

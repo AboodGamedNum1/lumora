@@ -16,5 +16,8 @@ object NativeBridge {
     external fun engineFrame(handle: Long, red: Float, green: Float, blue: Float): Boolean
     external fun engineDestroy(handle: Long)
 
+    /** Loads a .lumora package from bytes and renders it on the CPU reference renderer. "OK ..." or "ERR ...". */
+    external fun renderPackage(bytes: ByteArray): String
+
     external fun glesWindowTriangle(surface: android.view.Surface): String
 }

@@ -72,4 +72,25 @@ class NativeBridgeTest {
             reader.close()
         }
     }
+
+    @Test
+    fun packedSampleSceneLoadsAndRendersOnTheEmulatorCpu() {
+        // aurora.lumora is produced by lumora-packer from samples/aurora; a host test keeps it fresh.
+        val bytes = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().context.assets
+            .open("aurora.lumora").use { it.readBytes() }
+        val r = NativeBridge.renderPackage(bytes)
+        println("Package render on emulator CPU: $r")
+        assertTrue(r, r.startsWith("OK Aurora (sample) files=6"))
+        // Host reference values (x86_64 Linux): (64,2)=10,20,80 (64,125)=0,60,30 (64,64)=0,81,37, alpha 255.
+        // arm64 may differ by one level because of fused multiply-add, so allow a tolerance of 2.
+        fun px(key: String): List<Int> =
+            Regex("$key=(\\d+),(\\d+),(\\d+),(\\d+)").find(r)!!.groupValues.drop(1).map { it.toInt() }
+        fun near(key: String, want: List<Int>) {
+            val got = px(key)
+            for (i in 0 until 4) assertTrue("$key got $got want $want", Math.abs(got[i] - want[i]) <= 2)
+        }
+        near("64,2", listOf(10, 20, 80, 255))
+        near("64,125", listOf(0, 60, 30, 255))
+        near("64,64", listOf(0, 81, 37, 255))
+    }
 }

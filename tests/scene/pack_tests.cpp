@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 
 #include "pack_dir.h"
 #include "zip_store.h"
@@ -41,4 +42,14 @@ TEST_CASE("packer refuses bad sources", "[pack]") {
   }
   CHECK_FALSE(pack_directory(d).ok);  // pre-existing checksums.txt
   fs::remove_all(d);
+}
+
+TEST_CASE("samples/aurora.lumora is the current packer output", "[pack]") {
+  const auto p = pack_directory(LUMORA_SAMPLES_DIR "/aurora");
+  REQUIRE(p.ok);
+  const auto z = write_zip(p.files, 6);
+  std::ifstream in(LUMORA_SAMPLES_DIR "/aurora.lumora", std::ios::binary);
+  const std::vector<std::uint8_t> on_disk((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+  INFO("regenerate with: lumora-packer pack samples/aurora samples/aurora.lumora");
+  CHECK(on_disk == z);
 }
