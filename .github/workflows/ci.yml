@@ -89,7 +89,7 @@ jobs:
         run: |
           set -e
           mkdir -p fuzz-out
-          for t in json manifest scene settings zip inflate ppm; do
+          for t in json manifest scene settings zip inflate ppm png; do
             mkdir -p work/$t && cp -r tools/fuzz/corpus/$t/. work/$t/
             ./build-fuzz/tools/fuzz/fuzz_$t -max_total_time=45 -timeout=10 -rss_limit_mb=2048 -artifact_prefix=fuzz-out/${t}- work/$t 2>&1 | tail -5
           done
