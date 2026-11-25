@@ -539,10 +539,12 @@ TEST_CASE("the aurora sample's settings load packed and parse", "[settings][samp
   REQUIRE(it != packed.files.end());
   const auto r = parse_settings_schema(std::string(it->second.begin(), it->second.end()));
   REQUIRE(r.ok());
-  REQUIRE(r.schema.settings.size() == 2);
-  CHECK(r.schema.settings[0].type == SettingType::Float);
-  CHECK(r.schema.settings[1].type == SettingType::Color);
+  REQUIRE(r.schema.settings.size() == 3);
+  CHECK(r.schema.settings[0].type == SettingType::Float);  // parallax_strength, read by the sample script
+  CHECK(r.schema.settings[1].type == SettingType::Float);
+  CHECK(r.schema.settings[2].type == SettingType::Color);
   const SettingsValues v = resolve_values(r.schema, {});
+  CHECK(v.at("parallax_strength") == fval(1.0));
   CHECK(v.at("glow") == fval(0.5));
   CHECK(v.at("tint") == cval(0.2f, 0.6f, 0.5f, 1.0f));
 }

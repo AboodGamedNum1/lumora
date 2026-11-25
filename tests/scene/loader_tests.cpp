@@ -75,3 +75,34 @@ TEST_CASE("scene.json rules", "[loader]") {
   CHECK(parse_scene("nope").error == SceneError::NotJson);
   CHECK(parse_scene(R"({"root":{"id":"a","future":1}})").ok());
 }
+
+namespace {
+FileMap build_with_script(const std::string& script_entry, const std::string* script_text, std::size_t pad = 0) {
+  FileMap f;
+  put(f, "manifest.json", std::string(R"({"format_version":1,"scene_schema_version":1,"lua_api_version":1,
+ "min_engine_version":"0.0.1","name":"Sample","entry":{"scene":"scene.json")") + script_entry + "}}");
+  put(f, "scene.json", kScene);
+  put(f, "assets/sky.png", "not really a png");
+  if (script_text) put(f, "scripts/main.lua", *script_text + std::string(pad, ' '));
+  std::string sums;
+  for (const auto& [p, d] : f) sums += to_hex(sha256(d.data(), d.size())) + "  " + p + "\n";
+  put(f, "checksums.txt", sums);
+  return f;
+}
+}  // namespace
+
+TEST_CASE("an optional script entry is read and checked", "[loader]") {
+  const std::string lua = "function on_parallax(x, y) return x, y end";
+  const std::string entry = R"(,"script":"scripts/main.lua")";
+  {
+    auto r = load_package(build_with_script(entry, &lua));
+    REQUIRE(r.ok());
+    CHECK(r.manifest.script_path == "scripts/main.lua");
+  }
+  CHECK(load_package(build_with_script("", &lua)).manifest.script_path.empty());
+  CHECK(load_package(build_with_script(entry, nullptr)).error == LoadError::MissingFile);
+  CHECK(load_package(build_with_script(entry, &lua, kMaxScriptBytes)).error == LoadError::BadManifest);
+  CHECK(load_package(build_with_script(entry, &lua, kMaxScriptBytes - lua.size())).ok());
+  CHECK(load_package(build_with_script(R"(,"script":"../x.lua")", &lua)).error == LoadError::BadManifest);
+  CHECK(load_package(build_with_script(R"(,"script":5)", &lua)).error == LoadError::BadManifest);
+}

@@ -78,6 +78,7 @@ Implemented in `core/scene/manifest.h` and covered by `tests/scene/scene_tests.c
 | `author` | string | optional, at most 128 bytes |
 | `entry.scene` | package-relative path | required |
 | `entry.settings` | package-relative path | optional |
+| `entry.script` | package-relative path | optional; one Lua file of at most 64 KB defining `on_parallax` (docs/scripting-slice.md); the loader checks that it exists and is within the size cap |
 | `backends` | array of `vulkan`, `gles`, `d3d12` | optional; absent means a full multi-platform package; an unknown name is rejected |
 
 Unknown fields are ignored (section 8.1). Entry paths must not be empty, absolute, contain a drive prefix, backslashes, control characters, or `.`, `..` or empty components. The full archive entry policy is `core/package/entry_policy.h`.

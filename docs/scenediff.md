@@ -81,7 +81,7 @@ backslashes and control characters, and bytes that are not valid UTF-8 become U+
   is derived from the other files). `settings.json` is an ordinary file here: it is not parsed, so only a changed
   digest shows up.
 - **Manifest.** Every field of the loaded manifest: `format_version`, `scene_schema_version`, `lua_api_version`,
-  `min_engine_version`, `name`, `author`, `scene_path`, `settings_path`, `backends`. Each difference is one
+  `min_engine_version`, `name`, `author`, `scene_path`, `settings_path`, `script_path`, `backends`. Each difference is one
   `~ manifest <field>: old -> new` line. `backends` is compared as a set and printed sorted.
 - **Scene nodes.** Matched by node id. A node's path is its ids from the root joined with `/`, for example
   `root/hills-layer`. Reported fields: `name`, `position`, `scale`, `rotation_z_degrees`, `layer_asset`,

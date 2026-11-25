@@ -134,6 +134,12 @@ ManifestResult parse_manifest(std::string_view json_text, const EngineSupport& s
       return fail(ManifestError::BadValue, "entry.settings is not a safe package path");
     m.settings_path = settings->as_string();
   }
+  if (const JsonValue* script = entry->find("script")) {
+    if (!script->is_string()) return fail(ManifestError::WrongType, "field must be a string: entry.script");
+    if (!safe_relative_path(script->as_string()))
+      return fail(ManifestError::BadValue, "entry.script is not a safe package path");
+    m.script_path = script->as_string();
+  }
 
   if (const JsonValue* backends = root.find("backends")) {
     if (!backends->is_array()) return fail(ManifestError::WrongType, "field must be an array: backends");

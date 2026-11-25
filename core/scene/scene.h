@@ -51,6 +51,9 @@ SceneResult parse_scene(std::string_view json_text, unsigned max_node_depth = 32
 // Reserved entry name for the future package signature block (docs/security-model.md, Authenticity).
 inline constexpr const char* kSignatureEntry = "signature.lumora";
 
+// Largest script file the loader accepts (the script host applies the same cap).
+inline constexpr std::size_t kMaxScriptBytes = 64 * 1024;
+
 using FileMap = std::map<std::string, std::vector<std::uint8_t>>;
 
 enum class LoadError {

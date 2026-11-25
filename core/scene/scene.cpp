@@ -146,6 +146,12 @@ LoadResult load_package(const FileMap& files, const EngineSupport& support) {
   if (!s.ok()) return fail(LoadError::BadScene, s.message);
   for (const auto& a : s.scene.assets)
     if (!files.count(a.path)) return fail(LoadError::MissingFile, "asset file is missing: " + a.path);
+  if (!r.manifest.script_path.empty()) {
+    const auto it = files.find(r.manifest.script_path);
+    if (it == files.end()) return fail(LoadError::MissingFile, "script file is missing: " + r.manifest.script_path);
+    if (it->second.size() > kMaxScriptBytes)
+      return fail(LoadError::BadManifest, "script file is larger than the allowed size: " + r.manifest.script_path);
+  }
   r.scene = std::move(s.scene);
   return r;
 }

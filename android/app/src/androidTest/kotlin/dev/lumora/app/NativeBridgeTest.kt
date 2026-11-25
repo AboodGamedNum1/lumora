@@ -80,7 +80,7 @@ class NativeBridgeTest {
             .open("aurora.lumora").use { it.readBytes() }
         val r = NativeBridge.renderPackage(bytes)
         println("Package render on emulator CPU: $r")
-        assertTrue(r, r.startsWith("OK Aurora (sample) files=6"))
+        assertTrue(r, r.startsWith("OK Aurora (sample) files=7"))
         // Host reference values (x86_64 Linux): (64,2)=10,20,80 (64,125)=0,60,30 (64,64)=0,81,37, alpha 255.
         // arm64 may differ by one level because of fused multiply-add, so allow a tolerance of 2.
         fun px(key: String): List<Int> =

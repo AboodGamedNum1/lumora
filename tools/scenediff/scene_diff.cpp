@@ -85,6 +85,7 @@ void diff_manifest(const scene::Manifest& a, const scene::Manifest& b, std::vect
   str("author", a.author, b.author);
   str("scene_path", a.scene_path, b.scene_path);
   str("settings_path", a.settings_path, b.settings_path);
+  str("script_path", a.script_path, b.script_path);
   std::set<std::string> sa(a.backends.begin(), a.backends.end()), sb(b.backends.begin(), b.backends.end());
   if (sa != sb)
     changed(out, "manifest", "backends", "", fmt_list({sa.begin(), sa.end()}, false),

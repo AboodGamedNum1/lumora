@@ -27,6 +27,7 @@ struct Manifest {
   std::string author;                    // optional, empty when absent
   std::string scene_path;                // entry.scene, package-relative
   std::string settings_path;             // entry.settings, empty when absent
+  std::string script_path;               // entry.script (one Lua file, docs/scripting-slice.md), empty when absent
   std::vector<std::string> backends;     // optional; empty means the full multi-platform package
 };
 
