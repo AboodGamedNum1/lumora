@@ -81,7 +81,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Software Vulkan on Windows spike | not started |
 | GNOME wallpaper-method spike (source review, nested shell) | not started |
 | Shader toolchain pins (glslang, SPIRV-Cross, DXC) | not started |
-| Vulkan backend (validation-clean) | not started |
+| Vulkan backend, first slice: instance, device, validation messenger, named buffers and textures, destroy, caps | done (CI-verified on lavapipe software ICD; run https://github.com/Captain3BoOd/lumora/actions/runs/45573393813). Still missing: swapchain, pipelines, command recording, descriptor sets, sync, render passes. The test asserts zero validation messages; whether the validation layer was actually loaded is not yet logged, to be added. |
 | GLES 3.2 backend | not started |
 | D3D12 backend build, link and DXIL on Windows CI | not started |
 | Golden-image harness (lavapipe baselines) | not started |
@@ -109,3 +109,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: created at M0 start.
 - 2026-11-25: M0 exit criteria met and recorded.
 - 2026-11-25: M1 started: RHI interface and Null backend, WARP spike result.
+- 2026-11-25: Vulkan backend first slice on lavapipe in Linux CI.
