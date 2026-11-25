@@ -24,6 +24,7 @@ if(LUMORA_SANITIZE AND NOT MSVC)
 endif()
 
 add_subdirectory(core)
+add_subdirectory(tools/packer)
 
 if(LUMORA_BUILD_TESTS)
   enable_testing()

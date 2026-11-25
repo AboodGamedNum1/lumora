@@ -1,0 +1,5 @@
+add_executable(lumora_packer packer.cpp)
+target_link_libraries(lumora_packer PRIVATE lumora_core)
+target_include_directories(lumora_packer PRIVATE ${CMAKE_SOURCE_DIR}/core/scene)
+set_target_properties(lumora_packer PROPERTIES OUTPUT_NAME lumora-packer)
+lumora_target_warnings(lumora_packer)

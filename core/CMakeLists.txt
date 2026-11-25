@@ -1,4 +1,4 @@
-add_library(lumora_core STATIC src/version.cpp rhi/src/rhi.cpp package/entry_policy.cpp package/json_limits.cpp scene/json_value.cpp scene/manifest.cpp scene/checksums.cpp scene/scene.cpp scene/zip_store.cpp)
+add_library(lumora_core STATIC src/version.cpp rhi/src/rhi.cpp package/entry_policy.cpp package/json_limits.cpp scene/json_value.cpp scene/manifest.cpp scene/checksums.cpp scene/scene.cpp scene/zip_store.cpp scene/pack_dir.cpp)
 target_include_directories(lumora_core PUBLIC include rhi/include package scene)
 target_compile_features(lumora_core PUBLIC cxx_std_23)
 target_compile_definitions(lumora_core PUBLIC
