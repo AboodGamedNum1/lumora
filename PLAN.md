@@ -97,8 +97,8 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Frame pacing with a cap, visibility, surface and screen-off pause rules, fps overlay | done as pure logic with device tests (CI-verified on the API 29 emulator). Not yet verified on a real display or at the lock screen |
 | Crash-loop breaker with safe static mode | CI-verified software evidence: four breaker tests passed on the API 29 emulator job (run 45642599643) |
 | Engine renders through the RHI (window surface) | not started |
-| 16 KB, flavors, Direct Boot rule, AAB path checklist items | 16 KB alignment checked since M0; flavors, Direct Boot rule and AAB path not started |
-| Emulator lanes API 29, 34, 36 | API 29 only so far |
+| 16 KB, flavors, Direct Boot rule, AAB path checklist items | CI-verified (software evidence): 16 KB alignment check on both flavors, play and full flavors build, Direct Boot rule and process split asserted by an emulator test (run 45648170176). AAB path not started |
+| Emulator lanes API 29, 34, 36 | API 29, 34 and 36 pass on the emulator (software graphics); 34 and 36 are non-gating until they have passed on main more than once. Lane split for play flavor (29 and 36 only, docs/ci.md) not done: only full runs |
 
 ## 6. What is missing overall
 
