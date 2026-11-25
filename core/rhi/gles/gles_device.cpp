@@ -34,6 +34,8 @@ struct Slot {
   std::vector<unsigned char> host;  // buffers
   std::uint32_t width = 0, height = 0;
   bool is_texture = false;
+  bool is_window = false;
+  EGLSurface window = EGL_NO_SURFACE;
 };
 
 class GlesDevice;
@@ -77,11 +79,20 @@ class GlesDevice final : public Device {
     EGLint major = 0, minor = 0;
     if (display_ == EGL_NO_DISPLAY || !eglInitialize(display_, &major, &minor)) return fail(error, "eglInitialize failed");
     if (!eglBindAPI(EGL_OPENGL_ES_API)) return fail(error, "eglBindAPI(GLES) failed");
+    // Preferred: a config that can serve both pbuffers and windows (8-bit RGBA). Fallback: pbuffer only.
+    const EGLint win_attr[] = {EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT, EGL_SURFACE_TYPE,
+                               EGL_PBUFFER_BIT | EGL_WINDOW_BIT, EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8,
+                               EGL_BLUE_SIZE, 8, EGL_ALPHA_SIZE, 8, EGL_NONE};
     const EGLint cfg_attr[] = {EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT, EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
                                EGL_NONE};
     EGLConfig cfg = nullptr;
     EGLint n = 0;
-    if (!eglChooseConfig(display_, cfg_attr, &cfg, 1, &n) || n == 0) cfg = EGL_NO_CONFIG_KHR;
+    if (eglChooseConfig(display_, win_attr, &cfg, 1, &n) && n > 0) {
+      window_capable_ = true;
+    } else if (!eglChooseConfig(display_, cfg_attr, &cfg, 1, &n) || n == 0) {
+      cfg = EGL_NO_CONFIG_KHR;
+    }
+    config_ = cfg;
     // Preferred: an ES 3.2 context (EGL 1.5 attributes, with a debug context when validation is on).
     const EGLint ctx_attr[] = {EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 2,
                                EGL_CONTEXT_OPENGL_DEBUG, desc.enable_validation ? EGL_TRUE : EGL_FALSE, EGL_NONE};
@@ -179,6 +190,40 @@ class GlesDevice final : public Device {
     return h;
   }
 
+  Handle create_window_surface(void* native_window) override {
+    if (!native_window) return fail_h("window surface: null window");
+    if (!window_capable_) return fail_h("window surface: no window-capable EGL config");
+    EGLSurface surf = eglCreateWindowSurface(display_, config_, reinterpret_cast<EGLNativeWindowType>(native_window),
+                                             nullptr);
+    if (surf == EGL_NO_SURFACE) return fail_h("eglCreateWindowSurface failed, EGL error " + std::to_string(eglGetError()));
+    EGLint w = 0, h = 0;
+    eglQuerySurface(display_, surf, EGL_WIDTH, &w);
+    eglQuerySurface(display_, surf, EGL_HEIGHT, &h);
+    Handle hd = alloc();
+    Slot& s = slots_[hd.index];
+    s.is_window = true;
+    s.window = surf;
+    s.width = static_cast<std::uint32_t>(w);
+    s.height = static_cast<std::uint32_t>(h);
+    return hd;
+  }
+
+  bool present(Handle h) override {
+    Slot* s = get(h);
+    if (!s || !s->is_window) {
+      error_ = "present: not a window surface";
+      return false;
+    }
+    if (!eglSwapBuffers(display_, s->window)) {
+      error_ = "eglSwapBuffers failed, EGL error " + std::to_string(eglGetError());
+      return false;
+    }
+    return true;
+  }
+
+  EGLDisplay display() const { return display_; }
+  EGLContext context() const { return context_; }
+
   std::unique_ptr<CommandBuffer> begin_commands() override { return std::make_unique<GlesCommandBuffer>(this); }
 
   bool submit(CommandBuffer& cb) override {
@@ -251,6 +296,11 @@ class GlesDevice final : public Device {
     return sh;
   }
   void release(Slot& s) {
+    if (s.window != EGL_NO_SURFACE) {
+      eglMakeCurrent(display_, pbuffer_, pbuffer_, context_);
+      eglDestroySurface(display_, s.window);
+      s.window = EGL_NO_SURFACE;
+    }
     if (s.fbo) glDeleteFramebuffers(1, &s.fbo);
     if (s.texture) glDeleteTextures(1, &s.texture);
     if (s.program) glDeleteProgram(s.program);
@@ -278,6 +328,8 @@ class GlesDevice final : public Device {
   EGLDisplay display_ = EGL_NO_DISPLAY;
   EGLContext context_ = EGL_NO_CONTEXT;
   EGLSurface pbuffer_ = EGL_NO_SURFACE;
+  EGLConfig config_ = nullptr;
+  bool window_capable_ = false;
   GLuint vao_ = 0;
   std::vector<Slot> slots_;
   std::vector<std::uint32_t> free_;
@@ -291,11 +343,17 @@ void GlesCommandBuffer::begin_render_pass(Handle color, const float clear[4]) {
   const float c[4] = {clear[0], clear[1], clear[2], clear[3]};
   ops_.push_back([this, color, c] {
     Slot* t = dev_->get(color);
-    if (!t || !t->is_texture) {
-      dev_->set_error("render pass target is not a texture");
+    if (!t || !(t->is_texture || t->is_window)) {
+      dev_->set_error("render pass target is not a texture or window surface");
       return false;
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+    if (t->is_window) {
+      if (!eglMakeCurrent(dev_->display(), t->window, t->window, dev_->context())) {
+        dev_->set_error("eglMakeCurrent on the window surface failed");
+        return false;
+      }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, t->is_window ? 0 : t->fbo);
     glViewport(0, 0, static_cast<GLsizei>(t->width), static_cast<GLsizei>(t->height));
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);

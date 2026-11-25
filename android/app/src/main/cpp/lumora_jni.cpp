@@ -1,3 +1,4 @@
+#include <android/native_window_jni.h>
 #include <jni.h>
 
 #include <cstdio>
@@ -73,4 +74,53 @@ Java_dev_lumora_app_NativeBridge_glesTriangle(JNIEnv* env, jobject /*thiz*/) {
   // The emulator's GLES 3.0 SwiftShader draws nothing with a constant array indexed by gl_VertexID, so
   // the test uses the if-chain vertex shader (observed in CI, see PLAN.md).
   return env->NewStringUTF(rhi_triangle(lumora::rhi::Backend::Gles, true).c_str());
+}
+
+// Renders a clear (blue) plus a red triangle straight into the window surface of an Android Surface
+// through the RHI, then presents. The Kotlin side reads the image back and checks the pixels.
+extern "C" JNIEXPORT jstring JNICALL
+Java_dev_lumora_app_NativeBridge_glesWindowTriangle(JNIEnv* env, jobject /*thiz*/, jobject surface) {
+  using namespace lumora::rhi;
+  ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+  if (!window) return env->NewStringUTF("no native window");
+  std::string result;
+  {
+    std::string err;
+    auto dev = create_device({Backend::Gles, false}, &err);
+    if (!dev) {
+      result = "no device: " + err;
+    } else {
+      Handle win = dev->create_window_surface(window);
+      PipelineDesc pd;
+      pd.vertex_glsl =
+          "#version 300 es\n"
+          "void main() {\n"
+          "  vec2 p = vec2(-0.8, -0.8);\n"
+          "  if (gl_VertexID == 0) p = vec2(0.0, 0.8);\n"
+          "  if (gl_VertexID == 1) p = vec2(0.8, -0.8);\n"
+          "  gl_Position = vec4(p, 0.0, 1.0);\n"
+          "}\n";
+      pd.fragment_glsl =
+          "#version 300 es\n"
+          "precision mediump float;\n"
+          "out vec4 out_color;\n"
+          "void main() { out_color = vec4(1.0, 0.0, 0.0, 1.0); }\n";
+      Handle pipe = dev->create_graphics_pipeline(pd);
+      if (!win.valid() || !pipe.valid()) {
+        result = "setup failed: " + std::string(dev->last_error());
+      } else {
+        const float clear[4] = {0.0f, 0.0f, 1.0f, 1.0f};
+        auto cb = dev->begin_commands();
+        cb->begin_render_pass(win, clear);
+        cb->bind_pipeline(pipe);
+        cb->draw(3);
+        cb->end_render_pass();
+        if (!dev->submit(*cb)) result = "submit failed: " + std::string(dev->last_error());
+        else if (!dev->present(win)) result = "present failed: " + std::string(dev->last_error());
+        else result = "OK " + dev->capabilities().device_name;
+      }
+    }
+  }
+  ANativeWindow_release(window);
+  return env->NewStringUTF(result.c_str());
 }

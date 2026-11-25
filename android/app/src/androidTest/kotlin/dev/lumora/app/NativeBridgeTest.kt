@@ -1,6 +1,10 @@
 package dev.lumora.app
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.graphics.PixelFormat
+import android.media.ImageReader
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,5 +22,38 @@ class NativeBridgeTest {
         val r = NativeBridge.glesTriangle()
         println("RHI GLES on emulator: $r")
         assertTrue(r, r.startsWith("OK"))
+    }
+
+    @Test
+    fun rhiGlesRendersIntoAWindowSurface() {
+        val reader = ImageReader.newInstance(64, 64, PixelFormat.RGBA_8888, 3)
+        try {
+            val r = NativeBridge.glesWindowTriangle(reader.surface)
+            println("RHI GLES window surface on emulator: $r")
+            assertTrue(r, r.startsWith("OK"))
+            var image: android.media.Image? = null
+            val deadline = System.currentTimeMillis() + 5000
+            while (image == null && System.currentTimeMillis() < deadline) {
+                image = reader.acquireLatestImage()
+                if (image == null) Thread.sleep(50)
+            }
+            assertNotNull("no frame arrived at the consumer", image)
+            image!!.use {
+                val plane = it.planes[0]
+                val buf = plane.buffer
+                fun px(x: Int, y: Int): IntArray {
+                    val o = y * plane.rowStride + x * plane.pixelStride
+                    return IntArray(4) { c -> buf.get(o + c).toInt() and 0xFF }
+                }
+                val center = px(32, 32)
+                val corner = px(1, 1)
+                assertEquals("center is red: ${center.toList()}", 255, center[0])
+                assertEquals(0, center[2])
+                assertEquals("corner is blue: ${corner.toList()}", 255, corner[2])
+                assertEquals(0, corner[0])
+            }
+        } finally {
+            reader.close()
+        }
     }
 }

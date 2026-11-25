@@ -96,6 +96,11 @@ class Device {
   virtual Handle create_buffer(const BufferDesc& desc) = 0;
   virtual Handle create_texture(const TextureDesc& desc) = 0;
   virtual Handle create_graphics_pipeline(const PipelineDesc&) { return fail_unsupported(); }
+  // Window surface: `native_window` is the platform window (ANativeWindow* on Android). The
+  // returned handle can be the color target of a render pass; present() shows the result.
+  // Backends without window support return an invalid handle.
+  virtual Handle create_window_surface(void* native_window) { (void)native_window; return {}; }
+  virtual bool present(Handle window_surface) { (void)window_surface; return false; }
   virtual std::unique_ptr<CommandBuffer> begin_commands() { return nullptr; }
   // Submits and waits for completion. Returns false on failure (see last_error()).
   virtual bool submit(CommandBuffer&) { return false; }
