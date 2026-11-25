@@ -1,0 +1,10 @@
+# Distribution (Section 19)
+
+> Normative document of the Lumora Master Plan. Section numbers are stable IDs shared by all files and are not contiguous inside one file. Read `LUMORA_MASTER.md` first.
+
+## 19. Distribution
+
+1. **Now:** signed release APK + `.lumora` sample pack, shared directly (D19), built by CI on a tag from a protected environment. Two flavors: `full` and `play` (Section 9.3). Linux editor and desktop runtime as x86_64 **`.deb` + AppImage** (D28; 10A.5) built from the same release. **Windows editor packaging:** a CI-built zip with a SHA-256 file, static CRT or app-local redistributable (no vcredist dependency), no bundled Vulkan loader (the GPU driver installs `vulkan-1.dll`; an old bundled copy can break ICD discovery), D3D12 Agility SDK only if used, GitHub release artifact attestation, and a smoke job that unzips on a clean runner. Signing route is open question OQ5 (unsigned zip with a documented SmartScreen warning, an OV certificate later, or Microsoft Store MSIX; reviewer-sourced facts, unverified: Artifact Signing is limited to the USA and Canada for individuals, EV certificates no longer bypass SmartScreen, an unsigned file also meets Mark-of-the-Web and corporate policy). Scene packages are ordinary files friends pass around.
+2. **GitHub (from the start, D31):** repo, Apache-2.0 license file from the first commit, GitHub Actions on every push (Section 14.2), releases carry the signed artifacts. Visibility is open question OQ4.
+3. **Later:** Google Play listing (needs a Play developer account and policy review). **Play work recorded now:** AAB build path (decided at M0, delivered at M10), Play App Signing, target API 36 from 2026-08-31 (reviewer-cited, re-check at M10), 16 KB page-size support, Data safety form, privacy policy, foreground-service type declarations, Notification Listener and MediaProjection scrutiny (handled by the `play` flavor), Android 15+ edge-to-edge enforcement for the Compose UI, the user-executable-content angle (imported Lua scenes). Post-v1 candidates: Windows runtime, node shader graph, marketplace, weather input.
+

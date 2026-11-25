@@ -1,0 +1,13 @@
+build/
+out/
+.cache/
+*.user
+.vs/
+.idea/
+.gradle/
+local.properties
+*.keystore
+*.jks
+*.p12
+*.pfx
+.env
