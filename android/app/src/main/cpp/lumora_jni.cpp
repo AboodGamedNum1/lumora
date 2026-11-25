@@ -1,5 +1,6 @@
 #include <jni.h>
 
+#include <cstdio>
 #include <string>
 
 #include "lumora/rhi/rhi.h"
@@ -42,7 +43,13 @@ std::string rhi_triangle(lumora::rhi::Backend backend) {
   const auto* px = static_cast<const unsigned char*>(dev->map(readback));
   if (!px) return "map failed";
   auto at = [&](unsigned x, unsigned y) { return px + (y * kSize + x) * 4; };
-  if (at(32, 32)[0] != 255 || at(32, 32)[2] != 0) return "center pixel is not red";
+  if (at(32, 32)[0] != 255 || at(32, 32)[2] != 0) {
+    char buf[160];
+    std::snprintf(buf, sizeof buf, "center pixel is not red: center=%u,%u,%u,%u corner=%u,%u,%u,%u on %s", at(32, 32)[0],
+                  at(32, 32)[1], at(32, 32)[2], at(32, 32)[3], at(1, 1)[0], at(1, 1)[1], at(1, 1)[2], at(1, 1)[3],
+                  dev->capabilities().device_name.c_str());
+    return buf;
+  }
   if (at(1, 1)[2] != 255 || at(1, 1)[0] != 0) return "corner pixel is not blue";
   return "OK " + dev->capabilities().device_name;
 }
