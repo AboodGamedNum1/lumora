@@ -6,9 +6,10 @@ last_completed_milestone: M0
 last_updated: 2026-11-25
 
 ## Current milestone
-M0, Foundations and CI. Exit criteria: see `docs/milestones.md`; status table in `PLAN.md`.
+M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table in `PLAN.md`.
 
 ## Done
+- M1 step 1: RHI interface, Null backend and tests; WARP D3D12 spike worked (WARP software evidence), https://github.com/Captain3BoOd/lumora/actions/runs/45570530990.
 - M0 exit criteria met, CI-verified in https://github.com/Captain3BoOd/lumora/actions/runs/45568499611 (commit 8b14281): Linux build, tests, ASan and UBSan green; Windows build and editor smoke test green (no GPU); Android release APK builds with ABI set exactly arm64-v8a and 16 KB alignment checked; API 29 x86_64 emulator boots and runs one instrumented test (KVM works on ubuntu-24.04 hosted runners).
 - Secret scan, Dependabot, shared test entry point, docs check in CI.
 
@@ -19,8 +20,8 @@ M0, Foundations and CI. Exit criteria: see `docs/milestones.md`; status table in
 - none recorded yet
 
 ## Next five tasks
-1. Close M0 carry-over items (WARP spike, GNOME spike source review, CodeQL).
-2. M1: RHI interface and Vulkan backend skeleton.
+1. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.
+2. M1: Vulkan backend skeleton on top of the RHI interface.
 3. M1: shader toolchain pins (glslang, SPIRV-Cross, DXC).
 4. M1: GLES 3.2 backend and golden-image harness.
 5. M1: D3D12 build and DXIL on Windows CI.
