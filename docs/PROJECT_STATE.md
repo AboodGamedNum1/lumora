@@ -9,6 +9,7 @@ last_updated: 2026-11-25
 M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table in `PLAN.md`.
 
 ## Done
+- M1 step 3: Vulkan command recording, render pass, pipeline, pixel-checked triangle on lavapipe, validation layer asserted active, https://github.com/Captain3BoOd/lumora/actions/runs/45587423739.
 - M1 step 2: Vulkan backend first slice (device, validation, buffers, textures) CI-verified on lavapipe, https://github.com/Captain3BoOd/lumora/actions/runs/45573393813.
 - M1 step 1: RHI interface, Null backend and tests; WARP D3D12 spike worked (WARP software evidence), https://github.com/Captain3BoOd/lumora/actions/runs/45570530990.
 - M0 exit criteria met, CI-verified in https://github.com/Captain3BoOd/lumora/actions/runs/45568499611 (commit 8b14281): Linux build, tests, ASan and UBSan green; Windows build and editor smoke test green (no GPU); Android release APK builds with ABI set exactly arm64-v8a and 16 KB alignment checked; API 29 x86_64 emulator boots and runs one instrumented test (KVM works on ubuntu-24.04 hosted runners).
@@ -18,14 +19,15 @@ M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table
 - M0 carry-over (not exit criteria): WARP and software-Vulkan spike, GNOME spike start, DXC and glslang pins, CodeQL, feature-test header check, version drift failure, branch protection (owner repository setting).
 
 ## Known failures
-- none recorded yet
+- Maven Central occasionally rate-limits hosted runners (HTTP 429); Gradle jobs cache and retry.
+- ASan job runs with leak detection off (third-party llvmpipe allocations).
 
 ## Next five tasks
 1. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.
-2. M1: Vulkan command recording, pipelines, render pass, then golden-image harness.
-3. M1: shader toolchain pins (glslang, SPIRV-Cross, DXC).
-4. M1: GLES 3.2 backend and golden-image harness.
-5. M1: D3D12 build and DXIL on Windows CI.
+2. M1: golden-image harness with tolerance, then shader toolchain pins (glslang, SPIRV-Cross, DXC).
+3. M1: GLES 3.2 backend (via ANGLE or SwiftShader in CI).
+4. M1: D3D12 build and DXIL on Windows CI.
+5. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.
 
 ## Where CI logs and artifacts live
 https://github.com/Captain3BoOd/lumora/actions

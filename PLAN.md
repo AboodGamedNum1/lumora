@@ -81,7 +81,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Software Vulkan on Windows spike | not started |
 | GNOME wallpaper-method spike (source review, nested shell) | not started |
 | Shader toolchain pins (glslang, SPIRV-Cross, DXC) | not started |
-| Vulkan backend, first slice: instance, device, validation messenger, named buffers and textures, destroy, caps | done (CI-verified on lavapipe software ICD; run https://github.com/Captain3BoOd/lumora/actions/runs/45573393813). Still missing: swapchain, pipelines, command recording, descriptor sets, sync, render passes. The test asserts zero validation messages; whether the validation layer was actually loaded is not yet logged, to be added. |
+| Vulkan backend: instance, device, validation layer (logged active and asserted in the test), named buffers and textures, command recording, one render pass (clear and store), graphics pipeline from SPIR-V, submit and fence wait, texture readback | done as a first slice (CI-verified on the lavapipe software driver, run https://github.com/Captain3BoOd/lumora/actions/runs/45587423739). A test renders a clear plus a triangle and checks pixels, with zero validation messages. Missing: swapchain, descriptor sets and bindings, vertex buffers, depth, blending, sync beyond a fence, pipeline cache, other formats. |
 | GLES 3.2 backend | not started |
 | D3D12 backend build, link and DXIL on Windows CI | not started |
 | Golden-image harness (lavapipe baselines) | not started |
@@ -110,3 +110,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: M0 exit criteria met and recorded.
 - 2026-11-25: M1 started: RHI interface and Null backend, WARP spike result.
 - 2026-11-25: Vulkan backend first slice on lavapipe in Linux CI.
+- 2026-11-25: Vulkan command recording, render pass, pipeline and pixel-checked triangle in CI. Leak detection is off in the ASan job because of third-party driver allocations (see ci.yml).
