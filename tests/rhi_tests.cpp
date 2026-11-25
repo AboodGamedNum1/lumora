@@ -31,7 +31,7 @@ TEST_CASE("null device validates descriptions and tracks lifetime") {
 
 TEST_CASE("unimplemented backends report an error and no device") {
   std::string err;
-  CHECK(create_device({Backend::Vulkan, true}, &err) == nullptr);
+  CHECK(create_device({Backend::Gles, true}, &err) == nullptr);
   CHECK_FALSE(err.empty());
   CHECK(backend_state(Backend::D3d12) != BackendState::Supported);
 }
