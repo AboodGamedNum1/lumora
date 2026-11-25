@@ -30,7 +30,7 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 | M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | source review done (docs/linux-wallpaper-matrix.md); nested-shell run still to do |
 | M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | done: exit criteria met and CI-verified, with first-slice backends and a carry-over list (section 5) |
 | M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | done: exit criteria met and CI-verified (software evidence on API 29, 34, 36 emulators), with caveats in section 5b |
-| M3 | Scene format and packer | in progress: JSON model, manifest parsing (CI-verified) and SHA-256 with checksums.txt parsing done (CI pending); loader, packer, sample scene not started |
+| M3 | Scene format and packer | in progress: JSON model, manifest parsing and SHA-256 with checksums.txt (CI-verified); scene.json draft and in-memory loader done (CI pending); ZIP reader, packer CLI, signature rules, sample package not started |
 | M3S | Vertical slice: 2D parallax scene end to end in CI | not started |
 | M4 | Renderer features (glTF, PBR, 2D, text; shadows, post-FX, particles, video) | not started |
 | M5 | Scripting: Lua sandbox, cancellation and recovery | not started |

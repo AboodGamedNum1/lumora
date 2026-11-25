@@ -81,3 +81,12 @@ Implemented in `core/scene/manifest.h` and covered by `tests/scene/scene_tests.c
 | `backends` | array of `vulkan`, `gles`, `d3d12` | optional; absent means a full multi-platform package; an unknown name is rejected |
 
 Unknown fields are ignored (section 8.1). Entry paths must not be empty, absolute, contain a drive prefix, backslashes, control characters, or `.`, `..` or empty components. The full archive entry policy is `core/package/entry_policy.h`.
+
+### 8.8 Checksums, scene.json draft and the loader order
+
+Implemented in `core/scene/checksums.h` and `core/scene/scene.h`, covered by `tests/scene/`. This is the first concrete draft; the rest of section 8 stays normative.
+
+- `checksums.txt`: one line per file, `<64 lowercase hex SHA-256>`, two spaces, the package-relative path. Duplicate paths, uppercase hex and empty paths are errors.
+- Load order: read `checksums.txt`, verify every other file against it (unlisted files, missing files and mismatches are rejected), and only then parse `manifest.json` and the scene file. No content is parsed before it is verified.
+- `scene.json` draft: an `assets` array (`id`, `kind` = `texture`, `path`) and a `root` node tree. A node has `id` (unique), optional `name`, `transform` (`position`, `scale`, `rotation_z_degrees`), optional `layer` (`asset`, `parallax_depth` in 0..1) and `children`. Unknown fields are ignored, references to unknown assets are errors.
+- Not yet covered: the ZIP reader, the entry policy wiring (contributor module), the signature block and the packer CLI.
