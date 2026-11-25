@@ -131,7 +131,7 @@ Two programs share one C++ core. The Editor (Windows and Linux, Dear ImGui) auth
 
 ## Milestones (summary)
 
-Order follows `docs/milestones.md` (Section 17), which holds the exit criteria. Total effort: 80-135 weeks serial, about 18-31 months. These are judgment estimates; the first calibration comes from M0-M2 and re-estimates happen at the M2 and M4 boundaries.
+Order follows `docs/milestones.md` (Section 17), which holds the exit criteria. Total effort: 85-144 weeks serial, about 20-33 months. These are judgment estimates; the first calibration comes from M0-M2 and re-estimates happen at the M2 and M4 boundaries.
 
 | ID | Milestone |
 |---|---|
@@ -150,6 +150,7 @@ Order follows `docs/milestones.md` (Section 17), which holds the exit criteria. 
 | M7b | Editor full |
 | M9 | Android app polish |
 | ML | Linux editor and Linux desktop runtime |
+| MW | Windows desktop runtime |
 | M10 | Release prep and owner gates G1-G7 |
 
 ## Top risks

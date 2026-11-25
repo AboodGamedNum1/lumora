@@ -41,9 +41,10 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 | M7b | Editor full | not started |
 | M9 | Android app polish | not started |
 | ML | Linux editor and Linux desktop runtime | not started |
+| MW | Windows desktop runtime: scene behind desktop icons, multi-monitor, pause for fullscreen apps, D3D12 first (added at the owner's request) | not started |
 | M10 | Release prep and owner hardware gates G1-G7 | not started |
 
-Effort estimate: 80-135 weeks serial, about 18-31 months, re-estimated at the M2 and M4 boundaries (`docs/milestones.md`).
+Effort estimate: 85-144 weeks serial, about 20-33 months (MW adds 5-9 weeks), re-estimated at the M2 and M4 boundaries (`docs/milestones.md`).
 
 ## 4. M0 detail
 
@@ -106,13 +107,47 @@ The product does not render a scene yet: no scene format, no Lua, no Android wal
 
 M1 carry-over (not exit criteria as written, still to do): Vulkan swapchain, descriptor sets, vertex buffers, depth, blending and sync beyond a fence; GLES parity beyond the triangle and an ES 3.2 context check; SPIR-V to GLSL ES through SPIRV-Cross (pinned, not yet fetched); DXC pin consumption; nested-shell GNOME spike run; branch protection (owner setting); real-GPU confirmation stays with gate G5.
 
+## 6b. MW: Windows desktop runtime (planned)
+
+Added at the owner's request, as its own milestone beside the Android runtime (M2) and the Linux runtime (ML). Full text is in `docs/milestones.md`. It does not change the M2 order.
+
+Scope:
+- A Windows desktop process that renders a packaged scene behind the desktop icons, one render surface per monitor.
+- D3D12 backend first, through the RHI, with the Vulkan backend as a later option (question MW-Q2).
+- Pause or throttle when a fullscreen app or game is running, on battery saver, on session lock, and when the display is off.
+- Multi-monitor: hot-plug, different resolutions and DPI, per-monitor or spanned scene (question MW-Q1).
+- Start with Windows, tray or control app, and a CLI. Packaging route follows OQ5.
+
+Dependencies: M1 D3D12 backend (first slice exists on WARP), M3 loader and M3S vertical slice, M5 scripting for interactive scenes, M6 input sources (pointer). Steps run after M6, in parallel order with ML steps 4 to 6.
+
+Evidence labels for MW:
+- CI-verified (Windows, no GPU): build, link, unit tests of the pure policy code (monitor layout, pause rules), process and window creation on the hosted runner.
+- WARP software evidence: D3D12 frames on the hosted runner. Not RX 570 evidence.
+- owner-hardware-verified: only the real-desktop behavior in gate G8 (proposed, below). Nothing about wallpaper placement behind icons, multi-monitor or fullscreen detection is claimed verified until then, because hosted runners have no real interactive desktop session.
+
+Design candidates, all unverified until a spike runs:
+- Placing the render window behind the icons by asking the shell to create the desktop worker window and parenting to it. This is an undocumented technique, so it can break on a Windows update. Reported but not verified: the window layout changed on newer Windows 11 builds. The spike must record the exact Windows build it ran on.
+- Fullscreen detection through the shell's user-notification-state query plus a foreground-window and monitor-rectangle check, with an allow and deny list. Games that use borderless windows are the known hard case.
+- Per-monitor DPI awareness and display-change messages for hot-plug.
+
+Risks:
+- Undocumented shell behavior breaks on updates (mitigation: a capability probe at start, a visible fallback to a normal borderless window below all others, and a documented supported-build list).
+- Hosted CI cannot show a real desktop, so the main behavior is owner-side only (mitigation: a headless test seam around all policy code, a real-session script for G8).
+- GPU contention with games (mitigation: pause rules first, frame cap, lower priority queue).
+- Antivirus and SmartScreen reactions to a process that parents into shell windows (tied to OQ5).
+
+Open questions for the owner (proposals, not decisions):
+- MW-Q1: one scene per monitor, the same scene on every monitor, or one scene spanned across all monitors?
+- MW-Q2: is a Vulkan fallback needed on Windows, for machines where D3D12 fails, in v1?
+- MW-Q3: pause policy defaults: pause for any fullscreen app, or only for a game list; battery saver behavior.
+
 ## 7. Open owner questions
 
 OQ1 to OQ10 in `LUMORA_MASTER.md` are open. None blocks M0. Reviewer recommendations in that file are recommendations, not decisions.
 
 ## 8. Owner hardware gates (end of project)
 
-G1 first render on the physical phone, G2 a Windows-exported package on the phone, G3 lock-screen and lifecycle on real firmware, G4 thermal and battery baseline, G5 D3D12 and Vulkan on the real GPU, G6 cross-backend fallback validation, G7 Linux real-session validation. Until these run, no claim of hardware verification is made.
+G1 first render on the physical phone, G2 a Windows-exported package on the phone, G3 lock-screen and lifecycle on real firmware, G4 thermal and battery baseline, G5 D3D12 and Vulkan on the real GPU, G6 cross-backend fallback validation, G7 Linux real-session validation. G8 is proposed for MW: Windows desktop runtime real-session validation (behind icons, multi-monitor, fullscreen pause) on the owner's Windows machine; it needs the owner's confirmation before it counts as a gate. Until these run, no claim of hardware verification is made.
 
 ## 9. Risks
 
@@ -127,3 +162,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: Golden-image harness and first lavapipe baseline.
 - 2026-11-25: Vulkan command recording, render pass, pipeline and pixel-checked triangle in CI. Leak detection is off in the ASan job because of third-party driver allocations (see ci.yml).
 - 2026-11-25: M1 exit criteria met (Vulkan on lavapipe in Linux and Windows CI, GLES on llvmpipe and on the API 29 emulator, D3D12 on WARP, golden images, CodeQL). Carry-over listed in section 6. M2 started.
+- 2026-11-25: MW (Windows desktop runtime) added to the plan at the owner's request. Estimate rises by 5-9 weeks. M2 order unchanged.
