@@ -4,6 +4,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -16,7 +17,7 @@ enum class Backend : std::uint8_t { Null, Vulkan, Gles, D3d12 };
 enum class BackendState : std::uint8_t { NotImplemented, Unvalidated, CiVerified, Supported };
 
 enum class Format : std::uint8_t { Rgba8Unorm, Bgra8Unorm, R8Unorm, Depth32Float };
-enum class BufferUsage : std::uint8_t { Vertex, Index, Uniform, Storage };
+enum class BufferUsage : std::uint8_t { Vertex, Index, Uniform, Storage, Readback };
 
 struct BufferDesc {
   std::string name;  // every resource is named (Section 6.1, debuggability)
@@ -30,6 +31,15 @@ struct TextureDesc {
   std::uint32_t height = 0;
   std::uint32_t mip_levels = 1;
   Format format = Format::Rgba8Unorm;
+};
+
+// Graphics pipeline, first slice: SPIR-V for the Vulkan backend, no vertex input (vertices come
+// from the shader), triangle list, one color attachment, no blending or depth.
+struct PipelineDesc {
+  std::string name;
+  std::span<const std::uint32_t> vertex_spirv;
+  std::span<const std::uint32_t> fragment_spirv;
+  Format color_format = Format::Rgba8Unorm;
 };
 
 struct Handle {
@@ -57,13 +67,35 @@ struct DeviceDesc {
   bool enable_validation = true;
 };
 
+// Records commands for one submission. Render passes always clear their color attachment first
+// (LoadOp Clear) and leave it ready for copy-out (StoreOp Store); other ops come later.
+class CommandBuffer {
+ public:
+  virtual ~CommandBuffer() = default;
+  virtual void begin_render_pass(Handle color_texture, const float clear_rgba[4]) = 0;
+  virtual void bind_pipeline(Handle pipeline) = 0;
+  virtual void draw(std::uint32_t vertex_count) = 0;
+  virtual void end_render_pass() = 0;
+  // Copies a render target (left by a render pass) into a Readback buffer.
+  virtual void copy_texture_to_buffer(Handle texture, Handle buffer) = 0;
+};
+
 class Device {
  public:
   virtual ~Device() = default;
+  Handle fail_unsupported() { return {}; }
   virtual const Capabilities& capabilities() const = 0;
   // Returns an invalid handle and sets last_error() when the description is rejected.
   virtual Handle create_buffer(const BufferDesc& desc) = 0;
   virtual Handle create_texture(const TextureDesc& desc) = 0;
+  virtual Handle create_graphics_pipeline(const PipelineDesc&) { return fail_unsupported(); }
+  virtual std::unique_ptr<CommandBuffer> begin_commands() { return nullptr; }
+  // Submits and waits for completion. Returns false on failure (see last_error()).
+  virtual bool submit(CommandBuffer&) { return false; }
+  // Host pointer of a buffer (all buffers are host visible in this slice), or nullptr.
+  virtual void* map(Handle) { return nullptr; }
+  virtual void unmap(Handle) {}
+  virtual bool validation_active() const { return false; }
   virtual void destroy(Handle h) = 0;
   virtual std::uint32_t live_resource_count() const = 0;
   virtual std::string_view last_error() const = 0;

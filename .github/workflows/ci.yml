@@ -33,7 +33,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends ninja-build libx11-dev libxext-dev libxtst-dev libxfixes-dev libxrender-dev libxinerama-dev \
             libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev \
             libegl-dev libgl-dev libdrm-dev libgbm-dev libasound2-dev \
-            libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
+            libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers glslang-tools
       - name: Record toolchain versions
         run: |
           cmake --version | head -1; ninja --version; g++ --version | head -1; python3 --version
