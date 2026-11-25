@@ -446,7 +446,7 @@ class VulkanCommandBuffer final : public CommandBuffer {
   std::vector<VkFramebuffer> framebuffers_;
 };
 
-VulkanDevice::Slot* VulkanDevice::get(Handle h) {
+Slot* VulkanDevice::get(Handle h) {
   if (h.index == 0 || h.index >= slots_.size()) return nullptr;
   Slot& s = slots_[h.index];
   return (s.live && s.generation == h.generation) ? &s : nullptr;
