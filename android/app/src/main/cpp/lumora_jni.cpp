@@ -70,10 +70,7 @@ Java_dev_lumora_app_NativeBridge_versionString(JNIEnv* env, jobject /*thiz*/) {
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_dev_lumora_app_NativeBridge_glesTriangle(JNIEnv* env, jobject /*thiz*/) {
-  std::string r = rhi_triangle(lumora::rhi::Backend::Gles, false);
-  if (r.rfind("OK", 0) != 0) {
-    const std::string second = rhi_triangle(lumora::rhi::Backend::Gles, true);
-    r += " | if-chain variant: " + second;
-  }
-  return env->NewStringUTF(r.c_str());
+  // The emulator's GLES 3.0 SwiftShader draws nothing with a constant array indexed by gl_VertexID, so
+  // the test uses the if-chain vertex shader (observed in CI, see PLAN.md).
+  return env->NewStringUTF(rhi_triangle(lumora::rhi::Backend::Gles, true).c_str());
 }
