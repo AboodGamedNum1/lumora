@@ -29,6 +29,7 @@ add_subdirectory(tools/packer)
 if(LUMORA_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
+  add_subdirectory(tools/fuzz)
 endif()
 
 add_subdirectory(spikes)
