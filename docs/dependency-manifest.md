@@ -7,6 +7,8 @@ Every direct dependency is pinned here with license, upstream and policy. A depe
 | Catch2 | v3.9.1 | BSL-1.0 | github.com/catchorg/Catch2 | CMake FetchContent, shallow | tests | Linux, Windows (CI) |
 | SDL3 | release-3.4.20 | zlib | github.com/libsdl-org/SDL | CMake FetchContent, static | editor window layer (default per plan; GLFW is the fallback) | Linux, Windows (CI) |
 | Dear ImGui | v1.92.9b-docking | MIT | github.com/ocornut/imgui | CMake FetchContent | editor UI (no RHI backend yet) | Linux, Windows (CI) |
+| SPIRV-Cross | vulkan-sdk-1.4.357.0 (pinned, not yet fetched) | Apache-2.0 | github.com/KhronosGroup/SPIRV-Cross | CMake FetchContent when the GLES backend consumes it | SPIR-V to GLSL ES for the GLES 3.2 backend | not yet built |
+| DirectX Shader Compiler (DXC) | v1.9.2609 (pinned, not yet fetched; CI currently uses the dxc.exe in the Windows SDK, version printed in the Windows job log) | LLVM Release (Apache-2.0 with LLVM exceptions) | github.com/microsoft/DirectXShaderCompiler | release package or NuGet Microsoft.Direct3D.DXC, when the SDK dxc is not enough | HLSL to DXIL test shaders and later the shader pipeline | SDK dxc: Windows (CI) |
 
 Update policy: bump a pin in its own commit, run the full CI, and update this table in the same commit. Security fixes are applied within a week of upstream release.
 
@@ -25,4 +27,4 @@ Read from the CI run for commit 8b14281 (https://github.com/Captain3BoOd/lumora/
 | Python | 3.12.3 | runner default | runner default |
 | Gradle / AGP / Kotlin / JDK | n/a | n/a | 8.11.1 / 8.7.3 / 2.0.21 / Temurin 17.0.21 |
 
-Shader and Vulkan test tools on the Linux job, installed from the Ubuntu 24.04 archive and recorded as observed (not yet hard-pinned): glslang-tools 15.1.0 (glslangValidator compiles the test shaders to SPIR-V), Vulkan validation layers 1.3.275, Vulkan headers and loader 1.3.275, Mesa 25.2.8 (lavapipe). Hard pins (a source build or container image) and SPIRV-Cross and DXC pins are still to do and arrive with the shader pipeline.
+Shader and Vulkan test tools on the Linux job, installed from the Ubuntu 24.04 archive and recorded as observed (not yet hard-pinned): glslang-tools 15.1.0 (glslangValidator compiles the test shaders to SPIR-V), Vulkan validation layers 1.3.275, Vulkan headers and loader 1.3.275, Mesa 25.2.8 (lavapipe). Hard pins (a source build or container image) and SPIRV-Cross and DXC pins are recorded in the table above from the upstream tag and release pages; they are not consumed by CI yet (the Windows job uses the SDK dxc and logs its version).

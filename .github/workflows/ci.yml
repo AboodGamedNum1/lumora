@@ -73,6 +73,16 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: build/spikes/Release/warp_spike.exe
+      - name: Software Vulkan on Windows spike (probe only, result is recorded)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          "VULKAN_SDK=$env:VULKAN_SDK"
+          Get-ChildItem "$env:windir\System32\vulkan-1.dll" -ErrorAction SilentlyContinue | Select-Object FullName, Length
+          Get-ChildItem "C:\VulkanSDK" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+          Get-ChildItem "C:\Windows\System32\DriverStore\FileRepository" -Filter "*vulkan*" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 FullName
+          Get-Command vulkaninfo -ErrorAction SilentlyContinue | Select-Object Source
+          Get-Command glslangValidator -ErrorAction SilentlyContinue | Select-Object Source
       - name: Upload golden images
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
