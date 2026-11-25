@@ -98,7 +98,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | Frame pacing with a cap, visibility, surface and screen-off pause rules, fps overlay | done as pure logic with device tests (CI-verified on the API 29 emulator). Not yet verified on a real display or at the lock screen |
 | Crash-loop breaker with safe static mode | CI-verified software evidence: four breaker tests passed on the API 29 emulator job (run 45642599643) |
 | Engine renders through the RHI (window surface) | not started |
-| 16 KB, flavors, Direct Boot rule, AAB path checklist items | CI-verified (software evidence): 16 KB alignment check on both flavors, play and full flavors build, Direct Boot rule and process split asserted by an emulator test (run 45648170176). AAB path not started |
+| 16 KB, flavors, Direct Boot rule, AAB path checklist items | CI-verified (software evidence): 16 KB alignment check on both flavors, play and full flavors build, Direct Boot rule and process split asserted by an emulator test (run 45648170176). the play AAB builds on every push (run 45650323262, android job green) |
 | Emulator lanes API 29, 34, 36 | API 29, 34 and 36 pass on the emulator (software graphics); 34 and 36 are non-gating until they have passed on main more than once. Lane split for play flavor (29 and 36 only, docs/ci.md) not done: only full runs |
 
 ## 6. What is missing overall
@@ -123,7 +123,7 @@ Dependencies: M1 D3D12 backend (first slice exists on WARP), M3 loader and M3S v
 Evidence labels for MW:
 - CI-verified (Windows, no GPU): build, link, unit tests of the pure policy code (monitor layout, pause rules), process and window creation on the hosted runner.
 - WARP software evidence: D3D12 frames on the hosted runner. Not RX 570 evidence.
-- owner-hardware-verified: only the real-desktop behavior in gate G8 (proposed, below). Nothing about wallpaper placement behind icons, multi-monitor or fullscreen detection is claimed verified until then, because hosted runners have no real interactive desktop session.
+- owner-hardware-verified: only the real-desktop behavior in gate G8 (confirmed by the owner, timing later). Nothing about wallpaper placement behind icons, multi-monitor or fullscreen detection is claimed verified until then, because hosted runners have no real interactive desktop session.
 
 Design candidates, all unverified until a spike runs:
 - Placing the render window behind the icons by asking the shell to create the desktop worker window and parenting to it. This is an undocumented technique, so it can break on a Windows update. Reported but not verified: the window layout changed on newer Windows 11 builds. The spike must record the exact Windows build it ran on.
@@ -147,7 +147,7 @@ OQ1 to OQ10 in `LUMORA_MASTER.md` are open. None blocks M0. Reviewer recommendat
 
 ## 8. Owner hardware gates (end of project)
 
-G1 first render on the physical phone, G2 a Windows-exported package on the phone, G3 lock-screen and lifecycle on real firmware, G4 thermal and battery baseline, G5 D3D12 and Vulkan on the real GPU, G6 cross-backend fallback validation, G7 Linux real-session validation. G8 is proposed for MW: Windows desktop runtime real-session validation (behind icons, multi-monitor, fullscreen pause) on the owner's Windows machine; it needs the owner's confirmation before it counts as a gate. Until these run, no claim of hardware verification is made.
+G1 first render on the physical phone, G2 a Windows-exported package on the phone, G3 lock-screen and lifecycle on real firmware, G4 thermal and battery baseline, G5 D3D12 and Vulkan on the real GPU, G6 cross-backend fallback validation, G7 Linux real-session validation. G8 is the MW gate: Windows desktop runtime real-session validation (behind icons, multi-monitor, fullscreen pause) on the owner's Windows machine. The owner confirmed he can run it, later and not now. Until these run, no claim of hardware verification is made.
 
 ## 9. Risks
 
@@ -163,3 +163,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: Vulkan command recording, render pass, pipeline and pixel-checked triangle in CI. Leak detection is off in the ASan job because of third-party driver allocations (see ci.yml).
 - 2026-11-25: M1 exit criteria met (Vulkan on lavapipe in Linux and Windows CI, GLES on llvmpipe and on the API 29 emulator, D3D12 on WARP, golden images, CodeQL). Carry-over listed in section 6. M2 started.
 - 2026-11-25: MW (Windows desktop runtime) added to the plan at the owner's request. Estimate rises by 5-9 weeks. M2 order unchanged.
+- 2026-11-25: Gate G8 (Windows desktop runtime, owner machine) confirmed by the owner, timing later. Play AAB path CI-verified.
