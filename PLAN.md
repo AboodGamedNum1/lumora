@@ -69,7 +69,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | NDK choice for 16 KB alignment | done (NDK 27.2.12479018 with flexible page sizes flag; alignment checked in CI) |
 | DXC and glslang version pins | partly: SPIRV-Cross and DXC pins recorded in docs/dependency-manifest.md, not yet consumed by CI; glslang observed 15.1.0 |
 | WARP and software-Vulkan-on-Windows spike | WARP done; software Vulkan on Windows: probe of the runner added, probe result (CI-verified observation): the Windows runner has the Vulkan loader (vulkan-1.dll in System32) but no Vulkan SDK and no software ICD installed, so Vulkan on Windows needs a downloaded software ICD (a Mesa build or SwiftShader); that download and a Vulkan test run are still to do |
-| GNOME spike start | not started |
+| GNOME spike start | done: source review of the reference extension recorded in docs/linux-wallpaper-matrix.md |
 | Feature-test header check for `docs/cpp-standard.md` | not started |
 
 ## 5. M1 detail (in progress)
@@ -79,7 +79,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | RHI interface (backend-agnostic types, `Device`, capability flags, backend support states) and Null backend with unit tests | done (CI-verified) |
 | WARP D3D12 spike on the Windows runner | done: a D3D12 device at feature level 12_0 on the WARP adapter, a render-target clear, copy and CPU readback all worked. Evidence label: WARP software evidence, CI-verified, never RX 570 evidence. Run: https://github.com/Captain3BoOd/lumora/actions/runs/45570530990. D3D12 backend state stays not implemented until the backend exists. |
 | Software Vulkan on Windows spike | not started |
-| GNOME wallpaper-method spike (source review, nested shell) | not started |
+| GNOME wallpaper-method spike (source review, nested shell) | source review done and written in docs/linux-wallpaper-matrix.md (unverified on real hardware, GPL source read only, nothing copied); nested-shell run in CI still to do |
 | Shader toolchain pins (glslang, SPIRV-Cross, DXC) | partly: glslang 15.1.0, validation layers and Mesa versions recorded as observed (Ubuntu packages), not hard-pinned; SPIRV-Cross vulkan-sdk-1.4.357.0 and DXC v1.9.2609 recorded as pins, not yet fetched by CI |
 | Vulkan backend: instance, device, validation layer (logged active and asserted in the test), named buffers and textures, command recording, one render pass (clear and store), graphics pipeline from SPIR-V, submit and fence wait, texture readback | done as a first slice (CI-verified on the lavapipe software driver, run https://github.com/Captain3BoOd/lumora/actions/runs/45587423739). A test renders a clear plus a triangle and checks pixels, with zero validation messages. Missing: swapchain, descriptor sets and bindings, vertex buffers, depth, blending, sync beyond a fence, pipeline cache, other formats. |
 | GLES 3.2 backend | done (first slice): headless EGL surfaceless context, buffers, render-target textures, program from GLSL ES source, clear, draw, readback. CI-verified on Mesa llvmpipe (OpenGL ES 3.2, software evidence, never phone-GPU evidence). The triangle golden image is byte-identical to the Vulkan lavapipe one. Still to do: SPIR-V to GLSL ES through SPIRV-Cross, Android EGL surface path |

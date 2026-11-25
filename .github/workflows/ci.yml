@@ -83,6 +83,16 @@ jobs:
           Get-ChildItem "C:\Windows\System32\DriverStore\FileRepository" -Filter "*vulkan*" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 FullName
           Get-Command vulkaninfo -ErrorAction SilentlyContinue | Select-Object Source
           Get-Command glslangValidator -ErrorAction SilentlyContinue | Select-Object Source
+      - name: Software Vulkan driver download probe (result is recorded)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $url = "https://github.com/pal1000/mesa-dist-win/releases/download/26.3.1/mesa3d-26.3.1-release-msvc.7z"
+          Invoke-WebRequest -Uri $url -OutFile mesa.7z
+          "sha256: " + (Get-FileHash mesa.7z -Algorithm SHA256).Hash
+          7z x mesa.7z -omesa -y | Select-Object -Last 3
+          Get-ChildItem mesa -Recurse -Include "*lvp*","*vulkan*" | Select-Object FullName, Length
+          Get-ChildItem mesa -Recurse -Filter "*icd*.json" | ForEach-Object { $_.FullName; Get-Content $_.FullName }
       - name: Upload golden images
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
