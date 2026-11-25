@@ -55,6 +55,36 @@ jobs:
             build/tests/shaders/*.h
           if-no-files-found: ignore
           retention-days: 7
+  windows-vulkan-spike:
+    # Spike: software Vulkan (Mesa lavapipe) on the Windows runner. Does not gate the main CI result.
+    runs-on: windows-2025
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download and verify the pinned lavapipe ICD
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/pal1000/mesa-dist-win/releases/download/26.3.1/mesa3d-26.3.1-release-msvc.7z" -OutFile mesa.7z
+          $h = (Get-FileHash mesa.7z -Algorithm SHA256).Hash
+          if ($h -ne "64E84CF13D67DD354640BF443ED0445E6A83AFD06A5729F0750B3744D633B3F1") { throw "mesa archive hash mismatch: $h" }
+          7z x mesa.7z -omesa -y | Select-Object -Last 2
+      - name: Build and run the Vulkan tests on lavapipe
+        shell: pwsh
+        run: |
+          cmake -S . -B build-vk -DLUMORA_BUILD_EDITOR=OFF -DLUMORA_WIN_VULKAN_SPIKE=ON "-DLUMORA_PRECOMPILED_SPV_DIR=$PWD/tests/shaders/precompiled"
+          cmake --build build-vk --config Release --parallel
+          $env:VK_DRIVER_FILES = "$PWD\mesa\x64\lvp_icd.x86_64.json"
+          $env:LUMORA_ALLOW_NO_VALIDATION = "1"
+          & build-vk/tests/Release/lumora_tests.exe
+      - name: Upload golden output
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-vulkan-golden
+          path: build-vk/golden-out
+          if-no-files-found: ignore
+          retention-days: 7
   windows:
     runs-on: windows-2025
     timeout-minutes: 40
