@@ -17,6 +17,7 @@ M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table
 - Secret scan, Dependabot, shared test entry point, docs check in CI.
 
 ## In flight
+- M1: D3D12 backend first slice on WARP with DXIL test shaders and a triangle golden image (WARP software evidence, CI-verified).
 - M0 carry-over (not exit criteria): WARP and software-Vulkan spike, GNOME spike start, DXC and glslang pins, CodeQL, feature-test header check, version drift failure, branch protection (owner repository setting).
 
 ## Known failures
@@ -27,7 +28,7 @@ M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table
 1. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.
 2. M1: shader toolchain pins (glslang, SPIRV-Cross, DXC).
 3. M1: GLES 3.2 backend (via ANGLE or SwiftShader in CI).
-4. M1: D3D12 build and DXIL on Windows CI.
+4. M1: GLES 3.2 backend, SPIRV-Cross and DXC pins, software-Vulkan-on-Windows spike, GNOME spike, CodeQL, emulator triangle.
 5. GNOME spike source review, software-Vulkan-on-Windows spike, CodeQL.
 
 ## Where CI logs and artifacts live
