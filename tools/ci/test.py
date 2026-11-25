@@ -26,6 +26,7 @@ def main():
     cfg = ["cmake", "-S", ".", "-B", a.build_dir, "-DCMAKE_BUILD_TYPE=" + a.config]
     if shutil.which("ninja") and os.name != "nt":
         cfg += ["-G", "Ninja"]
+    cfg += ["-DLUMORA_ENABLE_LUA=ON"]  # sandboxed Lua host for the M3S slice (Lua 5.4.9 built from source)
     if os.name != "nt":
         cfg += ["-DLUMORA_ENABLE_SPIRV_CROSS=ON"]  # SPIR-V to GLSL ES path, tested on GLES (llvmpipe)
     if a.sanitize:
