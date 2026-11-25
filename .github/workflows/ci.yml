@@ -39,6 +39,8 @@ jobs:
           cmake --version | head -1; ninja --version; g++ --version | head -1; python3 --version
       - name: Python tool tests (golden report, ppm diff)
         run: python3 -m unittest discover -s tools/golden
+      - name: Python tool tests (fuzz corpus tool)
+        run: python3 -m unittest discover -s tools/fuzz-tools/tests
       - name: Build and test (ASan and UBSan)
         run: python3 tools/ci/test.py --sanitize
         env:
