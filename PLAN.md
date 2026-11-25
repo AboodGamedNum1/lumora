@@ -64,7 +64,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | CI: Android Gradle release build, ABI set and 16 KB alignment checks | done (CI-verified) |
 | CI: API 29 emulator boot and one instrumented test, KVM answer recorded | done (CI-verified; KVM works on ubuntu-24.04 hosted runners) |
 | Secret scan in CI, Dependabot | done (CI-verified) |
-| CodeQL | not started |
+| CodeQL | workflow added (C and C++, weekly and on push and PR); result recorded when the first run finishes. Uploading results needs code scanning enabled on the repository, which is an owner setting |
 | Branch protection requiring green CI (owner repository setting) | not started, repository settings are not changed by the agent |
 | NDK choice for 16 KB alignment | done (NDK 27.2.12479018 with flexible page sizes flag; alignment checked in CI) |
 | DXC and glslang version pins | partly: SPIRV-Cross and DXC pins recorded in docs/dependency-manifest.md, not yet consumed by CI; glslang observed 15.1.0 |
@@ -86,7 +86,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | D3D12 backend build, link and DXIL on Windows CI | done (first slice): WARP-only device, buffers, textures, pipeline from DXIL (DXC from the Windows SDK, shader model 6.0), command recording, fence wait, readback. A triangle golden image matches its baseline in Windows CI. Evidence label: WARP software evidence, CI-verified, never RX 570 evidence. |
 | Golden-image harness (lavapipe baseline, tolerance compare, diff artifacts, see `docs/golden-images.md`) | done (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45590514447) |
 | Emulator hello triangle through the RHI | not started |
-| CodeQL | not started |
+| CodeQL | workflow added (C and C++, weekly and on push and PR); result recorded when the first run finishes. Uploading results needs code scanning enabled on the repository, which is an owner setting |
 
 ## 6. What is missing overall
 
