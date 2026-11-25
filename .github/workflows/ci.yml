@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Documentation consistency check
         run: python3 tools/check_docs.py
+      - name: Secret scan
+        run: python3 tools/ci/secret_scan.py
   linux:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -82,5 +84,36 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android-logs
+          path: android/app/build/reports
+          retention-days: 7
+  android-emulator:
+    # Answers the M0 question "does KVM work on the hosted runner": the job fails loudly if not.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      - name: Install pinned NDK and CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+      - name: Instrumented test on API 29 emulator (x86_64, software graphics, test-only ABI)
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 29
+          arch: x86_64
+          target: default
+          working-directory: android
+          script: ./gradlew --no-daemon connectedDebugAndroidTest
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-emulator-reports
           path: android/app/build/reports
           retention-days: 7
