@@ -2,7 +2,7 @@
 
 This file is the live view of the plan: what is done, what is in progress and what is missing. It is updated at every milestone and whenever the plan changes. The full specification is [LUMORA_MASTER.md](LUMORA_MASTER.md) and the topic documents under [docs/](docs/); where this file and a normative document differ, the normative document wins. Session-level detail is in [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md).
 
-Last updated: 2026-11-25. Current milestone: **M1, RHI core (in progress).** M0 exit criteria are met (CI-verified); a few M0 carry-over items remain, listed in section 4.
+Last updated: 2026-11-25. Current milestone: **M2, Runtime MVP (starting).** M0 and M1 exit criteria as written in docs/milestones.md are met (CI-verified); carry-over items remain, listed in sections 4 and 5.
 
 ## 1. Vision
 
@@ -27,9 +27,9 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 | ID | Milestone | Status |
 |---|---|---|
 | M0 | Foundations and CI | done (exit criteria CI-verified, carry-over items open) |
-| M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | not started |
-| M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | in progress (see section 5) |
-| M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | not started |
+| M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | source review done (docs/linux-wallpaper-matrix.md); nested-shell run still to do |
+| M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | done: exit criteria met and CI-verified, with first-slice backends and a carry-over list (section 5) |
+| M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | in progress |
 | M3 | Scene format and packer | not started |
 | M3S | Vertical slice: 2D parallax scene end to end in CI | not started |
 | M4 | Renderer features (glTF, PBR, 2D, text; shadows, post-FX, particles, video) | not started |
@@ -72,25 +72,27 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | GNOME spike start | done: source review of the reference extension recorded in docs/linux-wallpaper-matrix.md |
 | Feature-test header check for `docs/cpp-standard.md` | not started |
 
-## 5. M1 detail (in progress)
+## 5. M1 detail (exit criteria met)
 
 | Item | Status |
 |---|---|
 | RHI interface (backend-agnostic types, `Device`, capability flags, backend support states) and Null backend with unit tests | done (CI-verified) |
 | WARP D3D12 spike on the Windows runner | done: a D3D12 device at feature level 12_0 on the WARP adapter, a render-target clear, copy and CPU readback all worked. Evidence label: WARP software evidence, CI-verified, never RX 570 evidence. Run: https://github.com/Captain3BoOd/lumora/actions/runs/45570530990. D3D12 backend state stays not implemented until the backend exists. |
-| Software Vulkan on Windows spike | not started |
+| Software Vulkan on Windows spike | done (see section 4) |
 | GNOME wallpaper-method spike (source review, nested shell) | source review done and written in docs/linux-wallpaper-matrix.md (unverified on real hardware, GPL source read only, nothing copied); nested-shell run in CI still to do |
 | Shader toolchain pins (glslang, SPIRV-Cross, DXC) | partly: glslang 15.1.0, validation layers and Mesa versions recorded as observed (Ubuntu packages), not hard-pinned; SPIRV-Cross vulkan-sdk-1.4.357.0 and DXC v1.9.2609 recorded as pins, not yet fetched by CI |
 | Vulkan backend: instance, device, validation layer (logged active and asserted in the test), named buffers and textures, command recording, one render pass (clear and store), graphics pipeline from SPIR-V, submit and fence wait, texture readback | done as a first slice (CI-verified on the lavapipe software driver, run https://github.com/Captain3BoOd/lumora/actions/runs/45587423739). A test renders a clear plus a triangle and checks pixels, with zero validation messages. Missing: swapchain, descriptor sets and bindings, vertex buffers, depth, blending, sync beyond a fence, pipeline cache, other formats. |
 | GLES 3.2 backend | done (first slice): headless EGL surfaceless context, buffers, render-target textures, program from GLSL ES source, clear, draw, readback. CI-verified on Mesa llvmpipe (OpenGL ES 3.2, software evidence, never phone-GPU evidence). The triangle golden image is byte-identical to the Vulkan lavapipe one. Still to do: SPIR-V to GLSL ES through SPIRV-Cross, Android EGL surface path |
 | D3D12 backend build, link and DXIL on Windows CI | done (first slice): WARP-only device, buffers, textures, pipeline from DXIL (DXC from the Windows SDK, shader model 6.0), command recording, fence wait, readback. A triangle golden image matches its baseline in Windows CI. Evidence label: WARP software evidence, CI-verified, never RX 570 evidence. |
 | Golden-image harness (lavapipe baseline, tolerance compare, diff artifacts, see `docs/golden-images.md`) | done (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45590514447) |
-| Emulator hello triangle through the RHI | not started |
+| Emulator hello triangle through the RHI | done: an instrumented test on the API 29 x86_64 emulator renders a triangle through the RHI GLES backend and checks pixels (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45639527288). Observed limits: the emulator context is OpenGL ES 3.0 on SwiftShader, not 3.2, and it draws nothing when a constant array is indexed by gl_VertexID, so the emulator test uses an if-chain vertex shader. The GLES backend falls back to an ES 3.x context and a 1x1 pbuffer when EGL 1.5 attributes or surfaceless make-current are not available. Not phone-GPU evidence. |
 | CodeQL | done: workflow for C and C++ runs green on push, pull request and weekly. Result upload to the Security tab needs code scanning enabled on the repository, an owner setting that is not changed here |
 
 ## 6. What is missing overall
 
-Everything after M0. The product does not render anything yet: no RHI, no scene format, no Lua, no Android wallpaper service, no Linux wallpaper runtime, no editor beyond an empty window.
+The product does not render a scene yet: no scene format, no Lua, no Android wallpaper service, no Linux wallpaper runtime, no editor beyond an empty window.
+
+M1 carry-over (not exit criteria as written, still to do): Vulkan swapchain, descriptor sets, vertex buffers, depth, blending and sync beyond a fence; GLES parity beyond the triangle and an ES 3.2 context check; SPIR-V to GLSL ES through SPIRV-Cross (pinned, not yet fetched); DXC pin consumption; nested-shell GNOME spike run; branch protection (owner setting); real-GPU confirmation stays with gate G5.
 
 ## 7. Open owner questions
 
@@ -112,3 +114,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 - 2026-11-25: Vulkan backend first slice on lavapipe in Linux CI.
 - 2026-11-25: Golden-image harness and first lavapipe baseline.
 - 2026-11-25: Vulkan command recording, render pass, pipeline and pixel-checked triangle in CI. Leak detection is off in the ASan job because of third-party driver allocations (see ci.yml).
+- 2026-11-25: M1 exit criteria met (Vulkan on lavapipe in Linux and Windows CI, GLES on llvmpipe and on the API 29 emulator, D3D12 on WARP, golden images, CodeQL). Carry-over listed in section 6. M2 started.
