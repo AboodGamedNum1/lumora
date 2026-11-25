@@ -5,5 +5,5 @@
   "min_engine_version": "0.0.1",
   "name": "Aurora (sample)",
   "author": "Lumora project",
-  "entry": { "scene": "scene.json" }
+  "entry": { "scene": "scene.json", "settings": "settings.json" }
 }
