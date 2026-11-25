@@ -23,6 +23,23 @@ if(LUMORA_ENABLE_VULKAN)
   endif()
 endif()
 
+# GLES backend: Linux, needs EGL and GLESv2 (Mesa llvmpipe provides a software context in CI).
+option(LUMORA_ENABLE_GLES "Build the GLES RHI backend when EGL and GLESv2 are available" ON)
+if(LUMORA_ENABLE_GLES AND UNIX AND NOT ANDROID AND NOT APPLE)
+  find_library(LUMORA_EGL_LIB EGL)
+  find_library(LUMORA_GLES_LIB GLESv2)
+  find_path(LUMORA_GLES_INC GLES3/gl32.h)
+  find_path(LUMORA_EGL_INC EGL/egl.h)
+  if(LUMORA_EGL_LIB AND LUMORA_GLES_LIB AND LUMORA_GLES_INC AND LUMORA_EGL_INC)
+    target_sources(lumora_core PRIVATE rhi/gles/gles_device.cpp)
+    target_link_libraries(lumora_core PUBLIC ${LUMORA_EGL_LIB} ${LUMORA_GLES_LIB})
+    target_compile_definitions(lumora_core PUBLIC LUMORA_HAS_GLES=1)
+    message(STATUS "Lumora: GLES backend enabled")
+  else()
+    message(STATUS "Lumora: EGL or GLESv2 not found, GLES backend disabled")
+  endif()
+endif()
+
 # D3D12 backend: Windows only. Its runtime evidence in CI is the WARP software adapter.
 if(WIN32)
   target_sources(lumora_core PRIVATE rhi/d3d12/d3d12_device.cpp)

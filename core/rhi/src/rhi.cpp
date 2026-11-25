@@ -79,6 +79,9 @@ BackendState backend_state(Backend b) {
 #if defined(LUMORA_HAS_VULKAN)
     case Backend::Vulkan: return BackendState::CiVerified;  // lavapipe software evidence only
 #endif
+#if defined(LUMORA_HAS_GLES)
+    case Backend::Gles: return BackendState::CiVerified;  // Mesa llvmpipe software evidence only
+#endif
 #if defined(LUMORA_HAS_D3D12)
     case Backend::D3d12: return BackendState::CiVerified;  // WARP software evidence only, never RX 570
 #else
@@ -101,6 +104,9 @@ std::string_view backend_name(Backend b) {
 #if defined(LUMORA_HAS_D3D12)
 std::unique_ptr<Device> create_d3d12_device(const DeviceDesc& desc, std::string* error);
 #endif
+#if defined(LUMORA_HAS_GLES)
+std::unique_ptr<Device> create_gles_device(const DeviceDesc& desc, std::string* error);
+#endif
 #if defined(LUMORA_HAS_VULKAN)
 std::unique_ptr<Device> create_vulkan_device(const DeviceDesc& desc, std::string* error);
 #endif
@@ -109,6 +115,9 @@ std::unique_ptr<Device> create_device(const DeviceDesc& desc, std::string* error
   if (desc.backend == Backend::Null) return std::make_unique<NullDevice>();
 #if defined(LUMORA_HAS_VULKAN)
   if (desc.backend == Backend::Vulkan) return create_vulkan_device(desc, error);
+#endif
+#if defined(LUMORA_HAS_GLES)
+  if (desc.backend == Backend::Gles) return create_gles_device(desc, error);
 #endif
 #if defined(LUMORA_HAS_D3D12)
   if (desc.backend == Backend::D3d12) return create_d3d12_device(desc, error);

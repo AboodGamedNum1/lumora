@@ -43,6 +43,9 @@ struct PipelineDesc {
   // D3D12 consumes DXIL, one artifact per shader per backend (Section 6.2.1).
   std::span<const std::byte> vertex_dxil;
   std::span<const std::byte> fragment_dxil;
+  // GLES consumes GLSL ES source (version 300 es or newer).
+  std::string_view vertex_glsl;
+  std::string_view fragment_glsl;
   Format color_format = Format::Rgba8Unorm;
 };
 

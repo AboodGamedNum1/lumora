@@ -41,9 +41,9 @@ TEST_CASE("null device validates descriptions and tracks lifetime") {
   CHECK(dev->live_resource_count() == 0);
 }
 
-TEST_CASE("unimplemented backends report an error and no device") {
+TEST_CASE("unknown backends report an error and no device") {
   std::string err;
-  CHECK(create_device({Backend::Gles, true}, &err) == nullptr);
+  CHECK(create_device({static_cast<Backend>(99), true}, &err) == nullptr);
   CHECK_FALSE(err.empty());
   CHECK(backend_state(Backend::D3d12) != BackendState::Supported);
 }
@@ -77,7 +77,11 @@ TEST_CASE("vulkan backend on a software ICD is validation clean") {
 }
 #endif
 
-#if defined(LUMORA_VULKAN_RENDER_TEST) || defined(LUMORA_D3D12_RENDER_TEST)
+#if defined(LUMORA_HAS_GLES)
+#define LUMORA_GLES_RENDER_TEST 1
+#endif
+
+#if defined(LUMORA_VULKAN_RENDER_TEST) || defined(LUMORA_D3D12_RENDER_TEST) || defined(LUMORA_GLES_RENDER_TEST)
 // Renders a blue clear plus a red triangle on `backend`, reads the pixels back, checks them and
 // compares with the golden baseline of the given renderer.
 static void run_triangle_test(Backend backend, const PipelineDesc& shaders, const char* renderer) {
@@ -148,5 +152,23 @@ TEST_CASE("d3d12 on WARP renders a clear and a triangle and reads the pixels bac
   pd.vertex_dxil = std::as_bytes(std::span(triangle_vs_dxil));
   pd.fragment_dxil = std::as_bytes(std::span(triangle_ps_dxil));
   run_triangle_test(Backend::D3d12, pd, "warp");
+}
+#endif
+
+#if defined(LUMORA_GLES_RENDER_TEST)
+TEST_CASE("gles on a software context renders a clear and a triangle and reads the pixels back") {
+  PipelineDesc pd;
+  pd.vertex_glsl =
+      "#version 300 es\n"
+      "void main() {\n"
+      "  vec2 p[3] = vec2[](vec2(0.0, 0.8), vec2(0.8, -0.8), vec2(-0.8, -0.8));\n"
+      "  gl_Position = vec4(p[gl_VertexID], 0.0, 1.0);\n"
+      "}\n";
+  pd.fragment_glsl =
+      "#version 300 es\n"
+      "precision mediump float;\n"
+      "out vec4 out_color;\n"
+      "void main() { out_color = vec4(1.0, 0.0, 0.0, 1.0); }\n";
+  run_triangle_test(Backend::Gles, pd, "llvmpipe-gles");
 }
 #endif
