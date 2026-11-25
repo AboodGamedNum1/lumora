@@ -2,6 +2,7 @@
 #include <jni.h>
 
 #include <cstdio>
+#include <memory>
 #include <string>
 
 #include "lumora/rhi/rhi.h"
@@ -123,4 +124,66 @@ Java_dev_lumora_app_NativeBridge_glesWindowTriangle(JNIEnv* env, jobject /*thiz*
   }
   ANativeWindow_release(window);
   return env->NewStringUTF(result.c_str());
+}
+
+namespace {
+// One renderer per wallpaper engine surface: device, window surface and the triangle pipeline.
+struct Renderer {
+  std::unique_ptr<lumora::rhi::Device> dev;
+  ANativeWindow* window = nullptr;
+  lumora::rhi::Handle surface, pipeline;
+  ~Renderer() {
+    if (dev && surface.valid()) dev->destroy(surface);
+    if (dev && pipeline.valid()) dev->destroy(pipeline);
+    dev.reset();
+    if (window) ANativeWindow_release(window);
+  }
+};
+}  // namespace
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_dev_lumora_app_NativeBridge_engineCreate(JNIEnv* env, jobject /*thiz*/, jobject surface) {
+  using namespace lumora::rhi;
+  auto r = std::make_unique<Renderer>();
+  r->window = ANativeWindow_fromSurface(env, surface);
+  if (!r->window) return 0;
+  r->dev = create_device({Backend::Gles, false}, nullptr);
+  if (!r->dev) return 0;
+  r->surface = r->dev->create_window_surface(r->window);
+  PipelineDesc pd;
+  pd.vertex_glsl =
+      "#version 300 es\n"
+      "void main() {\n"
+      "  vec2 p = vec2(-0.5, -0.5);\n"
+      "  if (gl_VertexID == 0) p = vec2(0.0, 0.5);\n"
+      "  if (gl_VertexID == 1) p = vec2(0.5, -0.5);\n"
+      "  gl_Position = vec4(p, 0.0, 1.0);\n"
+      "}\n";
+  pd.fragment_glsl =
+      "#version 300 es\n"
+      "precision mediump float;\n"
+      "out vec4 out_color;\n"
+      "void main() { out_color = vec4(1.0, 1.0, 1.0, 1.0); }\n";
+  r->pipeline = r->dev->create_graphics_pipeline(pd);
+  if (!r->surface.valid() || !r->pipeline.valid()) return 0;
+  return reinterpret_cast<jlong>(r.release());
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_dev_lumora_app_NativeBridge_engineFrame(JNIEnv* /*env*/, jobject /*thiz*/, jlong handle, jfloat red, jfloat green,
+                                             jfloat blue) {
+  auto* r = reinterpret_cast<Renderer*>(handle);
+  if (!r) return JNI_FALSE;
+  const float clear[4] = {red, green, blue, 1.0f};
+  auto cb = r->dev->begin_commands();
+  cb->begin_render_pass(r->surface, clear);
+  cb->bind_pipeline(r->pipeline);
+  cb->draw(3);
+  cb->end_render_pass();
+  return r->dev->submit(*cb) && r->dev->present(r->surface) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_dev_lumora_app_NativeBridge_engineDestroy(JNIEnv* /*env*/, jobject /*thiz*/, jlong handle) {
+  delete reinterpret_cast<Renderer*>(handle);
 }

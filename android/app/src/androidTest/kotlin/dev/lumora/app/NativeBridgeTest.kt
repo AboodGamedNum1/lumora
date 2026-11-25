@@ -56,4 +56,20 @@ class NativeBridgeTest {
             reader.close()
         }
     }
+
+    @Test
+    fun engineRendererRunsManyFramesAndCloses() {
+        val reader = ImageReader.newInstance(64, 64, PixelFormat.RGBA_8888, 3)
+        try {
+            val h = NativeBridge.engineCreate(reader.surface)
+            assertTrue("engineCreate returned 0", h != 0L)
+            repeat(5) {
+                assertTrue(NativeBridge.engineFrame(h, 0.1f * it, 0.2f, 0.3f))
+                reader.acquireLatestImage()?.close()
+            }
+            NativeBridge.engineDestroy(h)
+        } finally {
+            reader.close()
+        }
+    }
 }
