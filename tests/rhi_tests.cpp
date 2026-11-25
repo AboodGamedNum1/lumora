@@ -40,7 +40,8 @@ TEST_CASE("unimplemented backends report an error and no device") {
 TEST_CASE("vulkan backend on a software ICD is validation clean") {
   std::string err;
   auto dev = create_device({Backend::Vulkan, true}, &err);
-  REQUIRE_MESSAGE(dev, err);
+  INFO(err);
+  REQUIRE(dev);
   WARN("vulkan device: " << dev->capabilities().device_name);
   CHECK(dev->capabilities().max_texture_size >= 4096);
   CHECK_FALSE(dev->create_buffer({"", 16, BufferUsage::Vertex}).valid());

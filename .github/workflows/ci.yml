@@ -78,6 +78,13 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Cache Gradle dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Install pinned NDK and CMake
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
@@ -85,7 +92,9 @@ jobs:
           java -version
       - name: Build release APK and debug APK
         working-directory: android
-        run: ./gradlew --no-daemon assembleRelease assembleDebug
+        # Maven Central rate-limits hosted runners now and then (HTTP 429), so retry the download.
+        run: |
+          for i in 1 2 3; do ./gradlew --no-daemon assembleRelease assembleDebug && exit 0; sleep 30; done; exit 1
       - name: Check ABI set and 16 KB alignment
         run: python3 tools/ci/check_apk.py android/app/build/outputs/apk/release/app-release-unsigned.apk
       - name: Upload build reports on failure
@@ -107,6 +116,13 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
+      - name: Cache Gradle dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Install pinned NDK and CMake
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
