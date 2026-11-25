@@ -29,6 +29,8 @@ if(LUMORA_BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
+add_subdirectory(spikes)
+
 if(LUMORA_BUILD_EDITOR)
   add_subdirectory(editor)
 endif()

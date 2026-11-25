@@ -1,6 +1,6 @@
 include(Dependencies)
 lumora_fetch_catch2()
-add_executable(lumora_tests core_tests.cpp)
+add_executable(lumora_tests core_tests.cpp rhi_tests.cpp)
 target_link_libraries(lumora_tests PRIVATE lumora_core Catch2::Catch2WithMain)
 lumora_target_warnings(lumora_tests)
 add_test(NAME lumora_tests COMMAND lumora_tests)
