@@ -2,6 +2,7 @@
 // Software evidence only (CPU reference, no GPU, no device).
 #include <catch2/catch_test_macros.hpp>
 
+#include "../golden.h"
 #include "cpu_renderer.h"
 #include "pack_dir.h"
 #include "zip_store.h"
@@ -49,4 +50,23 @@ TEST_CASE("aurora sample parallax: far sky stays, near hills move", "[render2d][
   CHECK(a.rgba != b.rgba);
   // The sky has parallax depth 1, so rows that only show sky stay identical.
   for (unsigned x = 0; x < 128; ++x) CHECK(px(a, x, 1)[0] == px(b, x, 1)[0]);
+}
+
+// Full-image goldens for the packed sample, loaded the way the product loads it (directory -> archive -> loader).
+// Same harness and policy as the synthetic scenes (docs/golden-cpu.md): per-channel tolerance 2, bless with
+// LUMORA_BLESS_GOLDEN=1 and look at the image before committing. CPU software rendering evidence only.
+TEST_CASE("aurora sample matches its golden images", "[render2d][golden][m3s]") {
+  struct Shot {
+    const char* name;
+    float ox, oy;
+  };
+  for (const Shot& s : {Shot{"aurora_rest", 0, 0}, Shot{"aurora_parallax_x1", 1, 0}, Shot{"aurora_parallax_y_neg1", 0, -1}}) {
+    CAPTURE(s.name);
+    const auto img = render_aurora(s.ox, s.oy);
+    REQUIRE(img.valid());
+    const golden::Image actual = golden::from_rgba(img.rgba.data(), img.width, img.height);
+    const golden::Result r = golden::check(s.name, actual, LUMORA_GOLDEN_CPU_DIR, LUMORA_GOLDEN_CPU_OUT_DIR, 2);
+    INFO(r.message << ", max delta " << r.max_delta << ", bad pixels " << r.bad_pixels);
+    CHECK(r.ok);
+  }
 }
