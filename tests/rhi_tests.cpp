@@ -8,6 +8,11 @@
 #include "triangle_vert_spv.h"
 #define LUMORA_VULKAN_RENDER_TEST 1
 #endif
+#if defined(LUMORA_HAS_D3D12) && defined(LUMORA_HAS_TEST_DXIL)
+#include "triangle_ps_dxil.h"
+#include "triangle_vs_dxil.h"
+#define LUMORA_D3D12_RENDER_TEST 1
+#endif
 
 using namespace lumora::rhi;
 
@@ -72,21 +77,22 @@ TEST_CASE("vulkan backend on a software ICD is validation clean") {
 }
 #endif
 
-#if defined(LUMORA_VULKAN_RENDER_TEST)
-TEST_CASE("vulkan renders a clear and a triangle and reads the pixels back") {
+#if defined(LUMORA_VULKAN_RENDER_TEST) || defined(LUMORA_D3D12_RENDER_TEST)
+// Renders a blue clear plus a red triangle on `backend`, reads the pixels back, checks them and
+// compares with the golden baseline of the given renderer.
+static void run_triangle_test(Backend backend, const PipelineDesc& shaders, const char* renderer) {
   std::string err;
-  auto dev = create_device({Backend::Vulkan, true}, &err);
+  auto dev = create_device({backend, true}, &err);
   INFO(err);
   REQUIRE(dev);
+  WARN("device: " << dev->capabilities().device_name);
   constexpr std::uint32_t kSize = 64;
   Handle target = dev->create_texture({"target", kSize, kSize, 1, Format::Rgba8Unorm});
   Handle readback = dev->create_buffer({"readback", kSize * kSize * 4, BufferUsage::Readback});
   REQUIRE(target.valid());
   REQUIRE(readback.valid());
-  PipelineDesc pd;
+  PipelineDesc pd = shaders;
   pd.name = "triangle";
-  pd.vertex_spirv = {triangle_vert_spv, sizeof(triangle_vert_spv) / 4};
-  pd.fragment_spirv = {triangle_frag_spv, sizeof(triangle_frag_spv) / 4};
   Handle pipe = dev->create_graphics_pipeline(pd);
   INFO(dev->last_error());
   REQUIRE(pipe.valid());
@@ -106,17 +112,16 @@ TEST_CASE("vulkan renders a clear and a triangle and reads the pixels back") {
   const auto* px = static_cast<const unsigned char*>(dev->map(readback));
   REQUIRE(px != nullptr);
   auto at = [&](unsigned x, unsigned y) { return px + (y * kSize + x) * 4; };
-  // Center is inside the triangle: red. Corner is outside: the blue clear color.
+  // Center is inside the triangle: red. Corners are outside: the blue clear color.
   CHECK(at(32, 32)[0] == 255);
   CHECK(at(32, 32)[1] == 0);
   CHECK(at(32, 32)[2] == 0);
   CHECK(at(1, 1)[0] == 0);
   CHECK(at(1, 1)[2] == 255);
   CHECK(at(kSize - 2, 1)[2] == 255);
-  // Golden image: the lavapipe baseline, per-channel tolerance 2 (software rasterizer differences).
   const golden::Result g = golden::check(
-      "triangle", golden::from_rgba(px, kSize, kSize), LUMORA_GOLDEN_DIR "/lavapipe",
-      LUMORA_GOLDEN_OUT_DIR, 2);
+      std::string("triangle_") + renderer, golden::from_rgba(px, kSize, kSize),
+      std::string(LUMORA_GOLDEN_DIR "/") + renderer, LUMORA_GOLDEN_OUT_DIR, 2);
   INFO(g.message << ", max delta " << g.max_delta << ", bad pixels " << g.bad_pixels);
   CHECK(g.ok);
   dev->unmap(readback);
@@ -125,5 +130,23 @@ TEST_CASE("vulkan renders a clear and a triangle and reads the pixels back") {
   dev->destroy(target);
   CHECK(dev->live_resource_count() == 0);
   CHECK(dev->validation_message_count() == 0);
+}
+#endif
+
+#if defined(LUMORA_VULKAN_RENDER_TEST)
+TEST_CASE("vulkan renders a clear and a triangle and reads the pixels back") {
+  PipelineDesc pd;
+  pd.vertex_spirv = {triangle_vert_spv, sizeof(triangle_vert_spv) / 4};
+  pd.fragment_spirv = {triangle_frag_spv, sizeof(triangle_frag_spv) / 4};
+  run_triangle_test(Backend::Vulkan, pd, "lavapipe");
+}
+#endif
+
+#if defined(LUMORA_D3D12_RENDER_TEST)
+TEST_CASE("d3d12 on WARP renders a clear and a triangle and reads the pixels back") {
+  PipelineDesc pd;
+  pd.vertex_dxil = std::as_bytes(std::span(triangle_vs_dxil));
+  pd.fragment_dxil = std::as_bytes(std::span(triangle_ps_dxil));
+  run_triangle_test(Backend::D3d12, pd, "warp");
 }
 #endif

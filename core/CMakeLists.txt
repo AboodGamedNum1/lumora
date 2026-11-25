@@ -22,3 +22,10 @@ if(LUMORA_ENABLE_VULKAN)
     message(STATUS "Lumora: Vulkan not found, backend disabled")
   endif()
 endif()
+
+# D3D12 backend: Windows only. Its runtime evidence in CI is the WARP software adapter.
+if(WIN32)
+  target_sources(lumora_core PRIVATE rhi/d3d12/d3d12_device.cpp)
+  target_link_libraries(lumora_core PUBLIC d3d12 dxgi)
+  target_compile_definitions(lumora_core PUBLIC LUMORA_HAS_D3D12=1)
+endif()

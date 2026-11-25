@@ -3,6 +3,7 @@
 // GLES and D3D12 backends are separate M1 steps.
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <span>
 #include <string>
@@ -39,6 +40,9 @@ struct PipelineDesc {
   std::string name;
   std::span<const std::uint32_t> vertex_spirv;
   std::span<const std::uint32_t> fragment_spirv;
+  // D3D12 consumes DXIL, one artifact per shader per backend (Section 6.2.1).
+  std::span<const std::byte> vertex_dxil;
+  std::span<const std::byte> fragment_dxil;
   Format color_format = Format::Rgba8Unorm;
 };
 

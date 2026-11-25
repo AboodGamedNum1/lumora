@@ -73,6 +73,14 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: build/spikes/Release/warp_spike.exe
+      - name: Upload golden images
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-golden
+          path: build/golden-out
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload editor zip
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

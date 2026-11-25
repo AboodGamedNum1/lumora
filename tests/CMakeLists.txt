@@ -24,6 +24,35 @@ if(GLSLANG_VALIDATOR)
   target_compile_definitions(lumora_tests PRIVATE LUMORA_HAS_TEST_SHADERS=1)
 endif()
 
+# DXIL for the D3D12 test: DXC from the Windows SDK (dxc.exe ships in the SDK bin directory).
+if(WIN32)
+  file(GLOB DXC_CANDIDATES "C:/Program Files (x86)/Windows Kits/10/bin/*/x64/dxc.exe")
+  list(SORT DXC_CANDIDATES)
+  list(REVERSE DXC_CANDIDATES)
+  list(GET DXC_CANDIDATES 0 DXC_EXECUTABLE)
+  if(DXC_EXECUTABLE)
+    message(STATUS "Lumora: DXC at ${DXC_EXECUTABLE}")
+    set(DXIL_OUT ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+    file(MAKE_DIRECTORY ${DXIL_OUT})
+    foreach(pair "vs;vs_main;vs_6_0" "ps;ps_main;ps_6_0")
+      list(GET pair 0 stage)
+      list(GET pair 1 entry)
+      list(GET pair 2 profile)
+      add_custom_command(
+        OUTPUT ${DXIL_OUT}/triangle_${stage}_dxil.h
+        COMMAND ${DXC_EXECUTABLE} -T ${profile} -E ${entry} -Fh ${DXIL_OUT}/triangle_${stage}_dxil.h
+                -Vn triangle_${stage}_dxil ${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.hlsl
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.hlsl
+        VERBATIM)
+      list(APPEND DXIL_HEADERS ${DXIL_OUT}/triangle_${stage}_dxil.h)
+    endforeach()
+    add_custom_target(lumora_test_dxil DEPENDS ${DXIL_HEADERS})
+    add_dependencies(lumora_tests lumora_test_dxil)
+    target_include_directories(lumora_tests PRIVATE ${DXIL_OUT})
+    target_compile_definitions(lumora_tests PRIVATE LUMORA_HAS_TEST_DXIL=1)
+  endif()
+endif()
+
 target_compile_definitions(lumora_tests PRIVATE
   LUMORA_GOLDEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/golden"
   LUMORA_GOLDEN_OUT_DIR="${CMAKE_BINARY_DIR}/golden-out")
