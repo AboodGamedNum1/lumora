@@ -116,7 +116,8 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | Fuzz corpus tool (tools/fuzz-tools, docs/fuzz-tools.md) | merged; its unit tests run in CI |
 | Animation clips and sampler (core/anim, M4 groundwork) | merged and CI-verified (CPU only, software evidence): tracks, Step, Linear and CubicSpline sampling, loop modes, draft clip JSON parser, docs/animation.md. Known cost: sample_track validates the whole track on each call. The clip player that binds tracks to scene nodes (docs/animation-player.md) and the easing curves, CSS cubic Bezier and tween helper (docs/easing.md) are merged and CI-verified on the CPU |
 | CPU particle emitter (core/particles, M4 groundwork) | merged (8d8c3c0), CI-verified on Linux and Windows with an identical golden digest; software evidence only |
-| Color and gradient module (core/color, M4 groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
+| Color and gradient module (core/color, M4 groundwork) | merged (0861e16), CI-verified on Linux and Windows with identical golden digests; software evidence only |
+| 2D path and spline module (core/spline, M4 groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
