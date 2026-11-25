@@ -133,6 +133,10 @@ jobs:
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+      - name: Pre-fetch Gradle dependencies and build test APKs (retried, Maven Central rate limits)
+        working-directory: android
+        run: |
+          for i in 1 2 3 4; do ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest && exit 0; sleep 60; done; exit 1
       - name: Instrumented test on API 29 emulator (x86_64, software graphics, test-only ABI)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
