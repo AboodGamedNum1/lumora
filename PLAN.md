@@ -114,7 +114,7 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | --- | --- |
 | Texture atlas packer (core/image/atlas, lumora-atlas CLI, docs/atlas.md) | merged and CI-verified on Linux, Windows and Android emulators (CPU only, software evidence) |
 | Fuzz corpus tool (tools/fuzz-tools, docs/fuzz-tools.md) | merged; its unit tests run in CI |
-| Animation clips and sampler (core/anim, M4 groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
+| Animation clips and sampler (core/anim, M4 groundwork) | merged and CI-verified (CPU only, software evidence): tracks, Step, Linear and CubicSpline sampling, loop modes, draft clip JSON parser, docs/animation.md. Known cost: sample_track validates the whole track on each call. The clip player that binds tracks to scene nodes has its interface and stubs on main, implementation in progress |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
