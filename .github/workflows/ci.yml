@@ -227,8 +227,9 @@ jobs:
           working-directory: android
           script: |
             adb shell cmd -l | grep -i wallpaper || echo "no wallpaper shell service listed"
-            adb shell cmd wallpaper help || true
+            adb shell settings put global hidden_api_policy 1 || true
             ./gradlew --no-daemon connected${{ matrix.flavor }}DebugAndroidTest || ./gradlew --no-daemon connected${{ matrix.flavor }}DebugAndroidTest
+            adb logcat -d -s System.out:I LumoraEngine:I | tail -40 || true
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

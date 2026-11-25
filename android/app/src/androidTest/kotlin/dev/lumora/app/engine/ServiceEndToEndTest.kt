@@ -5,7 +5,6 @@ import android.content.ComponentName
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,12 +29,20 @@ class ServiceEndToEndTest {
         val ctx = inst.targetContext
         val component = ComponentName(ctx, LumoraWallpaperService::class.java).flattenToString()
         shell("logcat -c")
-        val out = shell("cmd wallpaper set-component $component")
-        println("set-component: $out")
-        // Older images have no such shell command. Then this test is skipped, and PLAN.md says so.
-        assumeFalse("cmd wallpaper set-component is not available: $out",
-            out.contains("No shell command", ignoreCase = true) || out.contains("Unknown command", ignoreCase = true) ||
-                out.contains("Can't find service", ignoreCase = true))
+        // The wallpaper shell service has no set-component command on these images (CI log). Use the
+        // hidden WallpaperManager.setWallpaperComponent with the shell identity's permission.
+        var out = ""
+        inst.uiAutomation.adoptShellPermissionIdentity("android.permission.SET_WALLPAPER_COMPONENT")
+        try {
+            val wm = WallpaperManager.getInstance(ctx)
+            val m = WallpaperManager::class.java.getMethod("setWallpaperComponent", ComponentName::class.java)
+            out = "setWallpaperComponent returned " + m.invoke(wm, ComponentName.unflattenFromString(component))
+        } catch (t: Throwable) {
+            out = "setWallpaperComponent failed: $t"
+        } finally {
+            inst.uiAutomation.dropShellPermissionIdentity()
+        }
+        println("set wallpaper: $out")
         var log = ""
         var info: ComponentName? = null
         val deadline = System.currentTimeMillis() + 60_000
