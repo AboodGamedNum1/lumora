@@ -31,8 +31,9 @@ void oklab_to_srgb(const Oklab& lab, float out_rgb[3]);  // result clamped to 0.
 // Alpha handling.
 Rgba premultiply(const Rgba& c);
 Rgba unpremultiply(const Rgba& c);  // alpha 0 gives all zero
-// Source-over of straight colors, result straight. Operates in the given space only
+// Source-over of straight colors, result straight. If the result alpha is 0 all four channels are 0. Operates only
 // by arithmetic on the passed values (no conversion inside).
+// Sampling exactly at a stop position returns that stop color unchanged (no space round trip).
 Rgba over(const Rgba& src, const Rgba& dst);
 
 enum class Space : std::uint8_t { Srgb = 0, Linear = 1, Oklab = 2 };  // interpolation space
@@ -70,7 +71,7 @@ Rgba sample_gradient(const Gradient& g, float t);
 // Returns false (out untouched) on invalid gradient, n == 0 or n > 65536.
 bool bake_gradient_u8(const Gradient& g, std::size_t n, std::uint8_t* out_rgba);
 
-// Order-independent FNV-1a 64 digest over the bytes of a baked ramp, for golden tests.
+// Standard FNV-1a 64 (offset 0xcbf29ce484222325, prime 0x100000001b3) over the n bytes in order, for golden tests.
 std::uint64_t digest_u8(const std::uint8_t* data, std::size_t n);
 
 }  // namespace lumora::color
