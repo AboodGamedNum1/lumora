@@ -160,7 +160,8 @@ jobs:
       - name: Install pinned NDK and CMake
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+          # The NDK download sometimes arrives as a corrupt zip; retry.
+          for i in 1 2 3; do "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0" && break; [ $i = 3 ] && exit 1; sleep 20; done
           java -version
       - name: Build release APK and debug APK
         working-directory: android
@@ -213,7 +214,8 @@ jobs:
       - name: Install pinned NDK and CMake
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+          # The NDK download sometimes arrives as a corrupt zip; retry.
+          for i in 1 2 3; do "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0" && break; [ $i = 3 ] && exit 1; sleep 20; done
       - name: Pre-fetch Gradle dependencies and build test APKs (retried, Maven Central rate limits)
         working-directory: android
         run: |
