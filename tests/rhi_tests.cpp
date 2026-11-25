@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include "golden.h"
 #include "lumora/rhi/rhi.h"
 
 #if defined(LUMORA_HAS_VULKAN) && defined(LUMORA_HAS_TEST_SHADERS)
@@ -112,6 +113,12 @@ TEST_CASE("vulkan renders a clear and a triangle and reads the pixels back") {
   CHECK(at(1, 1)[0] == 0);
   CHECK(at(1, 1)[2] == 255);
   CHECK(at(kSize - 2, 1)[2] == 255);
+  // Golden image: the lavapipe baseline, per-channel tolerance 2 (software rasterizer differences).
+  const golden::Result g = golden::check(
+      "triangle", golden::from_rgba(px, kSize, kSize), LUMORA_GOLDEN_DIR "/lavapipe",
+      LUMORA_GOLDEN_OUT_DIR, 2);
+  INFO(g.message << ", max delta " << g.max_delta << ", bad pixels " << g.bad_pixels);
+  CHECK(g.ok);
   dev->unmap(readback);
   dev->destroy(pipe);
   dev->destroy(readback);

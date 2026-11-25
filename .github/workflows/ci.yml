@@ -44,12 +44,15 @@ jobs:
           # Leak detection is off: the software Vulkan driver (llvmpipe) leaves small allocations in
           # unsymbolized third-party modules, with no Lumora frame. ASan memory-error checks and UBSan stay on.
           ASAN_OPTIONS: detect_leaks=0
-      - name: Upload test logs on failure
-        if: failure()
+      - name: Upload golden images and test logs
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: linux-logs
-          path: build/Testing
+          name: linux-golden-and-logs
+          path: |
+            build/golden-out
+            build/Testing
+          if-no-files-found: ignore
           retention-days: 7
   windows:
     runs-on: windows-2025

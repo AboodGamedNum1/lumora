@@ -24,4 +24,8 @@ if(GLSLANG_VALIDATOR)
   target_compile_definitions(lumora_tests PRIVATE LUMORA_HAS_TEST_SHADERS=1)
 endif()
 
+target_compile_definitions(lumora_tests PRIVATE
+  LUMORA_GOLDEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/golden"
+  LUMORA_GOLDEN_OUT_DIR="${CMAKE_BINARY_DIR}/golden-out")
+
 add_test(NAME lumora_tests COMMAND lumora_tests)
