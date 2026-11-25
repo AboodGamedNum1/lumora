@@ -52,6 +52,7 @@ jobs:
           path: |
             build/golden-out
             build/Testing
+            build/tests/shaders/*.h
           if-no-files-found: ignore
           retention-days: 7
   windows:

@@ -12,6 +12,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(LUMORA_BUILD_TESTS "Build unit tests" ON)
 option(LUMORA_BUILD_EDITOR "Build the desktop editor" ON)
+option(LUMORA_WIN_VULKAN_SPIKE "Windows CI spike: build the Vulkan backend against the system loader" OFF)
 option(LUMORA_SANITIZE "Enable ASan and UBSan (GCC/Clang)" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

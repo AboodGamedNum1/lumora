@@ -24,6 +24,13 @@ if(GLSLANG_VALIDATOR)
   target_compile_definitions(lumora_tests PRIVATE LUMORA_HAS_TEST_SHADERS=1)
 endif()
 
+# Machines without glslangValidator (the Windows runner) can use SPIR-V headers built on Linux CI.
+set(LUMORA_PRECOMPILED_SPV_DIR "" CACHE PATH "Directory with triangle_vert_spv.h and triangle_frag_spv.h")
+if(NOT GLSLANG_VALIDATOR AND LUMORA_PRECOMPILED_SPV_DIR)
+  target_include_directories(lumora_tests PRIVATE ${LUMORA_PRECOMPILED_SPV_DIR})
+  target_compile_definitions(lumora_tests PRIVATE LUMORA_HAS_TEST_SHADERS=1)
+endif()
+
 # DXIL for the D3D12 test: DXC from the Windows SDK (dxc.exe ships in the SDK bin directory).
 if(WIN32)
   file(GLOB DXC_CANDIDATES "C:/Program Files (x86)/Windows Kits/10/bin/*/x64/dxc.exe")
