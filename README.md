@@ -30,7 +30,8 @@ Linux (Ubuntu) also needs the SDL3 build dependencies for the editor, for exampl
 ```
 sudo apt-get install build-essential cmake ninja-build python3 libx11-dev libxext-dev libxtst-dev libxfixes-dev libxrender-dev libxinerama-dev \
   libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev \
-  libegl-dev libgl-dev libdrm-dev libgbm-dev libasound2-dev
+  libegl-dev libgl-dev libdrm-dev libgbm-dev libasound2-dev \
+  libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
 ```
 
 The single entry point shared by local runs and CI configures, builds and tests everything:

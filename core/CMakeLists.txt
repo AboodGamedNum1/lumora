@@ -4,3 +4,17 @@ target_compile_features(lumora_core PUBLIC cxx_std_23)
 target_compile_definitions(lumora_core PUBLIC
   LUMORA_VERSION_STRING="${PROJECT_VERSION}")
 lumora_target_warnings(lumora_core)
+
+# Vulkan backend: built when the Vulkan headers and loader are found (Linux CI installs them).
+option(LUMORA_ENABLE_VULKAN "Build the Vulkan RHI backend when Vulkan is available" ON)
+if(LUMORA_ENABLE_VULKAN)
+  find_package(Vulkan QUIET)
+  if(Vulkan_FOUND)
+    target_sources(lumora_core PRIVATE rhi/vulkan/vulkan_device.cpp)
+    target_link_libraries(lumora_core PUBLIC Vulkan::Vulkan)
+    target_compile_definitions(lumora_core PUBLIC LUMORA_HAS_VULKAN=1)
+    message(STATUS "Lumora: Vulkan backend enabled")
+  else()
+    message(STATUS "Lumora: Vulkan not found, backend disabled")
+  endif()
+endif()

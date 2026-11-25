@@ -76,6 +76,9 @@ class NullDevice final : public Device {
 BackendState backend_state(Backend b) {
   switch (b) {
     case Backend::Null: return BackendState::CiVerified;
+#if defined(LUMORA_HAS_VULKAN)
+    case Backend::Vulkan: return BackendState::CiVerified;  // lavapipe software evidence only
+#endif
     case Backend::D3d12: return BackendState::NotImplemented;  // becomes Unvalidated once built
     default: return BackendState::NotImplemented;
   }
@@ -91,8 +94,15 @@ std::string_view backend_name(Backend b) {
   return "unknown";
 }
 
+#if defined(LUMORA_HAS_VULKAN)
+std::unique_ptr<Device> create_vulkan_device(const DeviceDesc& desc, std::string* error);
+#endif
+
 std::unique_ptr<Device> create_device(const DeviceDesc& desc, std::string* error) {
   if (desc.backend == Backend::Null) return std::make_unique<NullDevice>();
+#if defined(LUMORA_HAS_VULKAN)
+  if (desc.backend == Backend::Vulkan) return create_vulkan_device(desc, error);
+#endif
   if (error) *error = std::string(backend_name(desc.backend)) + " backend is not implemented yet";
   return nullptr;
 }

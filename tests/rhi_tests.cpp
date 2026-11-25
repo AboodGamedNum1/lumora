@@ -35,3 +35,30 @@ TEST_CASE("unimplemented backends report an error and no device") {
   CHECK_FALSE(err.empty());
   CHECK(backend_state(Backend::D3d12) != BackendState::Supported);
 }
+
+#if defined(LUMORA_HAS_VULKAN)
+TEST_CASE("vulkan backend on a software ICD is validation clean") {
+  std::string err;
+  auto dev = create_device({Backend::Vulkan, true}, &err);
+  REQUIRE_MESSAGE(dev, err);
+  WARN("vulkan device: " << dev->capabilities().device_name);
+  CHECK(dev->capabilities().max_texture_size >= 4096);
+  CHECK_FALSE(dev->create_buffer({"", 16, BufferUsage::Vertex}).valid());
+  Handle b = dev->create_buffer({"vb", 256, BufferUsage::Vertex});
+  Handle u = dev->create_buffer({"ub", 64, BufferUsage::Uniform});
+  Handle t = dev->create_texture({"tex", 64, 64, 3, Format::Rgba8Unorm});
+  Handle d = dev->create_texture({"depth", 64, 64, 1, Format::Depth32Float});
+  REQUIRE(b.valid());
+  REQUIRE(u.valid());
+  REQUIRE(t.valid());
+  REQUIRE(d.valid());
+  CHECK(dev->live_resource_count() == 4);
+  dev->destroy(b);
+  dev->destroy(b);
+  dev->destroy(u);
+  dev->destroy(t);
+  dev->destroy(d);
+  CHECK(dev->live_resource_count() == 0);
+  CHECK(dev->validation_message_count() == 0);
+}
+#endif

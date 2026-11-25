@@ -41,6 +41,7 @@ struct Handle {
 
 struct Capabilities {
   Backend backend = Backend::Null;
+  std::string device_name;
   std::uint32_t max_texture_size = 0;
   bool astc = false;
   bool etc2 = false;
@@ -66,6 +67,8 @@ class Device {
   virtual void destroy(Handle h) = 0;
   virtual std::uint32_t live_resource_count() const = 0;
   virtual std::string_view last_error() const = 0;
+  // Number of validation-layer warnings and errors seen so far (0 when validation is off).
+  virtual std::uint32_t validation_message_count() const { return 0; }
 };
 
 BackendState backend_state(Backend b);
