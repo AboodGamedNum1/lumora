@@ -166,9 +166,11 @@ jobs:
         working-directory: android
         # Maven Central rate-limits hosted runners now and then (HTTP 429), so retry the download.
         run: |
-          for i in 1 2 3; do ./gradlew --no-daemon assembleFullRelease assemblePlayRelease assembleFullDebug && exit 0; sleep 30; done; exit 1
+          for i in 1 2 3; do ./gradlew --no-daemon assembleFullRelease assemblePlayRelease assembleFullDebug bundlePlayRelease && exit 0; sleep 30; done; exit 1
       - name: Check ABI set and 16 KB alignment
         run: python3 tools/ci/check_apk.py android/app/build/outputs/apk/full/release/app-full-release-unsigned.apk && python3 tools/ci/check_apk.py android/app/build/outputs/apk/play/release/app-play-release-unsigned.apk
+      - name: Check that the AAB was produced
+        run: test -s android/app/build/outputs/bundle/playRelease/app-play-release.aab
       - name: Upload build reports on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
