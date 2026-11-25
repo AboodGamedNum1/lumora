@@ -181,14 +181,20 @@ jobs:
   android-emulator:
     # Answers the M0 question "does KVM work on the hosted runner": the job fails loudly if not.
     # Lanes 34 and 36 are new in M2 and do not gate until they have passed once on main.
-    name: android-emulator (api ${{ matrix.api }})
+    name: android-emulator (api ${{ matrix.api }}, ${{ matrix.flavor }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    continue-on-error: ${{ matrix.api != 29 }}
+    continue-on-error: ${{ matrix.api != 29 || matrix.flavor != 'Full' }}
     strategy:
       fail-fast: false
       matrix:
-        api: [29, 34, 36]
+        # docs/ci.md: full on every lane, play on API 29 and 36 only.
+        include:
+          - {api: 29, flavor: Full}
+          - {api: 29, flavor: Play}
+          - {api: 34, flavor: Full}
+          - {api: 36, flavor: Full}
+          - {api: 36, flavor: Play}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Enable KVM
@@ -211,7 +217,7 @@ jobs:
       - name: Pre-fetch Gradle dependencies and build test APKs (retried, Maven Central rate limits)
         working-directory: android
         run: |
-          for i in 1 2 3 4; do ./gradlew --no-daemon assembleFullDebug assembleFullDebugAndroidTest && exit 0; sleep 60; done; exit 1
+          for i in 1 2 3 4; do ./gradlew --no-daemon assemble${{ matrix.flavor }}Debug assemble${{ matrix.flavor }}DebugAndroidTest && exit 0; sleep 60; done; exit 1
       - name: Instrumented test on emulator (x86_64, software graphics, test-only ABI)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -219,11 +225,11 @@ jobs:
           arch: x86_64
           target: default
           working-directory: android
-          script: ./gradlew --no-daemon connectedFullDebugAndroidTest || ./gradlew --no-daemon connectedFullDebugAndroidTest
+          script: ./gradlew --no-daemon connected${{ matrix.flavor }}DebugAndroidTest || ./gradlew --no-daemon connected${{ matrix.flavor }}DebugAndroidTest
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: android-emulator-reports-${{ matrix.api }}
+          name: android-emulator-reports-${{ matrix.api }}-${{ matrix.flavor }}
           path: android/app/build/reports
           retention-days: 7
