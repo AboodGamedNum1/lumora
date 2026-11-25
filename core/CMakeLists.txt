@@ -34,7 +34,13 @@ endif()
 
 # GLES backend: Linux, needs EGL and GLESv2 (Mesa llvmpipe provides a software context in CI).
 option(LUMORA_ENABLE_GLES "Build the GLES RHI backend when EGL and GLESv2 are available" ON)
-if(LUMORA_ENABLE_GLES AND UNIX AND NOT ANDROID AND NOT APPLE)
+if(LUMORA_ENABLE_GLES AND ANDROID)
+  # NDK: EGL and GLESv3 are system libraries, the headers ship with the NDK sysroot.
+  target_sources(lumora_core PRIVATE rhi/gles/gles_device.cpp)
+  target_link_libraries(lumora_core PUBLIC EGL GLESv3)
+  target_compile_definitions(lumora_core PUBLIC LUMORA_HAS_GLES=1)
+  message(STATUS "Lumora: GLES backend enabled (Android)")
+elseif(LUMORA_ENABLE_GLES AND UNIX AND NOT APPLE)
   find_library(LUMORA_EGL_LIB EGL)
   find_library(LUMORA_GLES_LIB GLESv2)
   find_path(LUMORA_GLES_INC GLES3/gl32.h)

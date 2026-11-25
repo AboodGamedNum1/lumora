@@ -12,4 +12,11 @@ class NativeBridgeTest {
         val v = NativeBridge.versionString()
         assertTrue(v.startsWith("Lumora "))
     }
+
+    @Test
+    fun rhiGlesRendersATriangleOnTheEmulator() {
+        val r = NativeBridge.glesTriangle()
+        println("RHI GLES on emulator: $r")
+        assertTrue(r, r.startsWith("OK"))
+    }
 }
