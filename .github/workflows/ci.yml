@@ -1,0 +1,64 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Documentation consistency check
+        run: python3 tools/check_docs.py
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build libx11-dev libxext-dev \
+            libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev \
+            libegl-dev libgl-dev libdrm-dev libgbm-dev libasound2-dev
+      - name: Record toolchain versions
+        run: |
+          cmake --version | head -1; ninja --version; g++ --version | head -1; python3 --version
+      - name: Build and test (ASan and UBSan)
+        run: python3 tools/ci/test.py --sanitize
+        env:
+          SDL_VIDEODRIVER: dummy
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-logs
+          path: build/Testing
+          retention-days: 7
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Record toolchain versions
+        shell: pwsh
+        run: |
+          cmake --version | Select-Object -First 1
+          ninja --version
+          Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" | Select-Object -ExpandProperty Name
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property catalog_productDisplayVersion
+      - name: Build and test (editor smoke test, no GPU)
+        shell: pwsh
+        run: python tools/ci/test.py
+      - name: Upload editor zip
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lumora-editor-windows-smoke
+          path: build/editor/Release/lumora_editor.exe
+          retention-days: 3
