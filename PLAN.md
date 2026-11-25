@@ -64,7 +64,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | CI: Android Gradle release build, ABI set and 16 KB alignment checks | done (CI-verified) |
 | CI: API 29 emulator boot and one instrumented test, KVM answer recorded | done (CI-verified; KVM works on ubuntu-24.04 hosted runners) |
 | Secret scan in CI, Dependabot | done (CI-verified) |
-| CodeQL | workflow added (C and C++, weekly and on push and PR); result recorded when the first run finishes. Uploading results needs code scanning enabled on the repository, which is an owner setting |
+| CodeQL | done: workflow for C and C++ runs green on push, pull request and weekly. Result upload to the Security tab needs code scanning enabled on the repository, an owner setting that is not changed here |
 | Branch protection requiring green CI (owner repository setting) | not started, repository settings are not changed by the agent |
 | NDK choice for 16 KB alignment | done (NDK 27.2.12479018 with flexible page sizes flag; alignment checked in CI) |
 | DXC and glslang version pins | partly: SPIRV-Cross and DXC pins recorded in docs/dependency-manifest.md, not yet consumed by CI; glslang observed 15.1.0 |
@@ -82,11 +82,11 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | GNOME wallpaper-method spike (source review, nested shell) | not started |
 | Shader toolchain pins (glslang, SPIRV-Cross, DXC) | partly: glslang 15.1.0, validation layers and Mesa versions recorded as observed (Ubuntu packages), not hard-pinned; SPIRV-Cross vulkan-sdk-1.4.357.0 and DXC v1.9.2609 recorded as pins, not yet fetched by CI |
 | Vulkan backend: instance, device, validation layer (logged active and asserted in the test), named buffers and textures, command recording, one render pass (clear and store), graphics pipeline from SPIR-V, submit and fence wait, texture readback | done as a first slice (CI-verified on the lavapipe software driver, run https://github.com/Captain3BoOd/lumora/actions/runs/45587423739). A test renders a clear plus a triangle and checks pixels, with zero validation messages. Missing: swapchain, descriptor sets and bindings, vertex buffers, depth, blending, sync beyond a fence, pipeline cache, other formats. |
-| GLES 3.2 backend | not started |
+| GLES 3.2 backend | done (first slice): headless EGL surfaceless context, buffers, render-target textures, program from GLSL ES source, clear, draw, readback. CI-verified on Mesa llvmpipe (OpenGL ES 3.2, software evidence, never phone-GPU evidence). The triangle golden image is byte-identical to the Vulkan lavapipe one. Still to do: SPIR-V to GLSL ES through SPIRV-Cross, Android EGL surface path |
 | D3D12 backend build, link and DXIL on Windows CI | done (first slice): WARP-only device, buffers, textures, pipeline from DXIL (DXC from the Windows SDK, shader model 6.0), command recording, fence wait, readback. A triangle golden image matches its baseline in Windows CI. Evidence label: WARP software evidence, CI-verified, never RX 570 evidence. |
 | Golden-image harness (lavapipe baseline, tolerance compare, diff artifacts, see `docs/golden-images.md`) | done (CI-verified, run https://github.com/Captain3BoOd/lumora/actions/runs/45590514447) |
 | Emulator hello triangle through the RHI | not started |
-| CodeQL | workflow added (C and C++, weekly and on push and PR); result recorded when the first run finishes. Uploading results needs code scanning enabled on the repository, which is an owner setting |
+| CodeQL | done: workflow for C and C++ runs green on push, pull request and weekly. Result upload to the Security tab needs code scanning enabled on the repository, an owner setting that is not changed here |
 
 ## 6. What is missing overall
 

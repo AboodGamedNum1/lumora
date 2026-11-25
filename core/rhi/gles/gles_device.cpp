@@ -190,7 +190,9 @@ class GlesDevice final : public Device {
     Slot* s = get(h);
     if (!s) return;
     release(*s);
-    *s = Slot{.live = false, .generation = s->generation + 1};
+    const std::uint32_t next_generation = s->generation + 1;
+    *s = Slot{};
+    s->generation = next_generation;
     free_.push_back(h.index);
     --live_;
   }

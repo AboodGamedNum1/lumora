@@ -18,6 +18,7 @@ M1, RHI core (M0 is done). Exit criteria: see `docs/milestones.md`; status table
 
 ## In flight
 - M1: D3D12 backend first slice on WARP with DXIL test shaders and a triangle golden image (WARP software evidence, CI-verified).
+- M1: GLES backend first slice on Mesa llvmpipe with a triangle golden image (CI-verified software evidence); CodeQL workflow green.
 - M0 carry-over (not exit criteria): WARP and software-Vulkan spike, GNOME spike start, DXC and glslang pins, CodeQL, feature-test header check, version drift failure, branch protection (owner repository setting).
 
 ## Known failures
