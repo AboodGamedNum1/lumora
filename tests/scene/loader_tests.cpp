@@ -58,6 +58,12 @@ TEST_CASE("verification happens before parsing", "[loader]") {
   }
 }
 
+TEST_CASE("a signature block is rejected, never ignored", "[loader]") {
+  auto f = build();
+  put(f, kSignatureEntry, "sig");
+  CHECK(load_package(f).error == LoadError::SignatureUnsupported);
+}
+
 TEST_CASE("scene.json rules", "[loader]") {
   CHECK(parse_scene(R"({"root":{"id":"a","children":[{"id":"a"}]}})").error == SceneError::DuplicateId);
   CHECK(parse_scene(R"({"root":{"id":"a","layer":{"asset":"nope"}}})").error == SceneError::UnknownAsset);

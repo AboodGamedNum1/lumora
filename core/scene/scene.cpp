@@ -113,6 +113,8 @@ LoadResult load_package(const FileMap& files, const EngineSupport& support) {
     r.message = std::move(m);
     return r;
   };
+  // A package that carries a signature block cannot be trusted by a loader that cannot verify it: reject, never ignore.
+  if (files.count(kSignatureEntry)) return fail(LoadError::SignatureUnsupported, "package carries a signature block that this version cannot verify");
   const auto cs = files.find("checksums.txt");
   if (cs == files.end()) return fail(LoadError::MissingChecksums, "checksums.txt is missing");
   std::map<std::string, Sha256Digest> sums;

@@ -48,6 +48,9 @@ struct SceneResult {
 
 SceneResult parse_scene(std::string_view json_text, unsigned max_node_depth = 32);
 
+// Reserved entry name for the future package signature block (docs/security-model.md, Authenticity).
+inline constexpr const char* kSignatureEntry = "signature.lumora";
+
 using FileMap = std::map<std::string, std::vector<std::uint8_t>>;
 
 enum class LoadError {
@@ -57,6 +60,7 @@ enum class LoadError {
   ChecksumMismatch,   // a listed file differs from its digest
   UnlistedFile,       // a file is present but not covered by checksums.txt
   MissingFile,        // listed or referenced file absent
+  SignatureUnsupported,  // reserved signature entry present; this loader cannot verify signatures
   BadManifest,
   BadScene
 };
