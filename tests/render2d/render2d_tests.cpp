@@ -280,7 +280,7 @@ TEST_CASE("decode_ppm accepts valid P3 and P6", "[render2d][ppm]") {
   CHECK(img.height == 1);
   CHECK(img.rgba == std::vector<std::uint8_t>{1, 2, 3, 255, 4, 5, 6, 255});
   auto p6 = bytes("P6\n1 2\n255\n");
-  for (std::uint8_t b : {7, 8, 9, 10, 11, 12}) p6.push_back(b);
+  for (int b : {7, 8, 9, 10, 11, 12}) p6.push_back(static_cast<std::uint8_t>(b));
   REQUIRE(decode_ppm(p6.data(), p6.size(), img, err));
   CHECK(img.rgba == std::vector<std::uint8_t>{7, 8, 9, 255, 10, 11, 12, 255});
 }
