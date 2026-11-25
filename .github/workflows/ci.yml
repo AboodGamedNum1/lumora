@@ -14,8 +14,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - name: Documentation consistency check
         run: python3 tools/check_docs.py
+      - name: PROJECT_STATE matches the newest milestone tag
+        run: python3 tools/ci/check_state_tag.py
       - name: Secret scan
         run: python3 tools/ci/secret_scan.py
   linux:

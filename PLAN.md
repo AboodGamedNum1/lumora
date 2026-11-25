@@ -2,7 +2,7 @@
 
 This file is the live view of the plan: what is done, what is in progress and what is missing. It is updated at every milestone and whenever the plan changes. The full specification is [LUMORA_MASTER.md](LUMORA_MASTER.md) and the topic documents under [docs/](docs/); where this file and a normative document differ, the normative document wins. Session-level detail is in [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md).
 
-Last updated: 2026-11-25. Current milestone: **M0, foundations and CI (in progress).**
+Last updated: 2026-11-25. Current milestone: **M1, RHI core (not started).** M0 exit criteria are met (CI-verified); a few M0 carry-over items remain, listed in section 4.
 
 ## 1. Vision
 
@@ -26,7 +26,7 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 
 | ID | Milestone | Status |
 |---|---|---|
-| M0 | Foundations and CI | in progress |
+| M0 | Foundations and CI | done (exit criteria CI-verified, carry-over items open) |
 | M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | not started |
 | M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | not started |
 | M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | not started |
@@ -47,23 +47,27 @@ Effort estimate: 80-135 weeks serial, about 18-31 months, re-estimated at the M2
 
 ## 4. M0 detail
 
+CI evidence: https://github.com/Captain3BoOd/lumora/actions/runs/45568499611 (commit 8b14281, all five jobs green; evidence label CI-verified, software graphics only, no GPU, no real device).
+
 Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and builds the Android app; the Windows editor empty-window smoke test passes on the Windows runner (CI-verified, no GPU); an API 29 emulator boots in CI and runs one instrumented test.
 
 | Item | Status |
 |---|---|
 | Repository, Apache-2.0 license, README.md, PLAN.md | done |
 | Plan documents, `tools/check_docs.py`, PROJECT_STATE.md | done |
-| CMake superbuild skeleton (core, tests, editor) | done (needs CI confirmation) |
-| Dependency pins (Catch2, SDL3, Dear ImGui) and manifest | done (needs CI confirmation) |
+| CMake superbuild skeleton (core, tests, editor) | done (CI-verified) |
+| Dependency pins (Catch2, SDL3, Dear ImGui) and manifest | done (CI-verified) |
 | Coding standards and C++ standard docs | done |
 | Shared test entry point (`tools/ci/test.py`) | done |
-| CI: docs check, Linux build and tests with ASan and UBSan | in progress |
-| CI: Windows build and editor smoke test | in progress |
-| CI: Android Gradle build, ABI and 16 KB alignment checks | not started |
-| CI: API 29 emulator boot and one instrumented test, KVM answer recorded | not started |
-| Secret scan in CI, Dependabot, CodeQL | not started |
+| CI: docs check, Linux build and tests with ASan and UBSan | done (CI-verified) |
+| CI: Windows build and editor empty-window smoke test (no GPU) | done (CI-verified) |
+| CI: Android Gradle release build, ABI set and 16 KB alignment checks | done (CI-verified) |
+| CI: API 29 emulator boot and one instrumented test, KVM answer recorded | done (CI-verified; KVM works on ubuntu-24.04 hosted runners) |
+| Secret scan in CI, Dependabot | done (CI-verified) |
+| CodeQL | not started |
 | Branch protection requiring green CI (owner repository setting) | not started, repository settings are not changed by the agent |
-| DXC and glslang version pins, NDK choice for 16 KB alignment | not started |
+| NDK choice for 16 KB alignment | done (NDK 27.2.12479018 with flexible page sizes flag; alignment checked in CI) |
+| DXC and glslang version pins | not started, due with the shader pipeline in M1 |
 | WARP and software-Vulkan-on-Windows spike | not started |
 | GNOME spike start | not started |
 | Feature-test header check for `docs/cpp-standard.md` | not started |
@@ -87,3 +91,4 @@ Top risks are in `docs/risks.md`: scope for one executor, Arabic RTL in Dear ImG
 ## 9. Change log of this file
 
 - 2026-11-25: created at M0 start.
+- 2026-11-25: M0 exit criteria met and recorded.

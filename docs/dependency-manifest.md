@@ -14,4 +14,15 @@ Toolchain pins (CMake, Ninja, MSVC toolset, Windows SDK, NDK, Gradle, AGP, JDK) 
 
 ## Toolchain versions observed in CI
 
-Filled in from CI job logs as they become available (see `docs/PROJECT_STATE.md`).
+Read from the CI run for commit 8b14281 (https://github.com/Captain3BoOd/lumora/actions/runs/45568499611). These are runner-provided versions, recorded as observed. Pinning to exact versions on drift is still to do.
+
+| Tool | Linux (ubuntu-24.04) | Windows (windows-2025) | Android job |
+|---|---|---|---|
+| CMake | 3.31.6 | 4.5.0 | 3.22.1 (SDK package, pinned in Gradle) |
+| Compiler | GCC 13.3.0 | MSVC 14.52.37025 (Visual Studio 18 2026) | NDK 27.2.12479018 Clang (pinned) |
+| Windows SDK | n/a | 10.0.26100.0 | n/a |
+| Ninja | 1.13.2 | not used (Visual Studio generator) | n/a |
+| Python | 3.12.3 | runner default | runner default |
+| Gradle / AGP / Kotlin / JDK | n/a | n/a | 8.11.1 / 8.7.3 / 2.0.21 / Temurin 17.0.21 |
+
+DXC and glslang pins are not made yet (they arrive with the shader pipeline, M1).
