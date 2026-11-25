@@ -1,5 +1,5 @@
-// Minimal ZIP container for .lumora packages: STORED entries only, no ZIP64, no encryption, no data descriptors.
-// Deflate and ZIP64 need a pinned library decision (docs/dependency-manifest.md) and are not implemented here.
+// Minimal ZIP container for .lumora packages: STORED and DEFLATE entries, no ZIP64, no encryption, no data descriptors.
+// Deflate uses the dependency-free codec in core/package/deflate.h. ZIP64 is not implemented.
 // The reader never trusts sizes or offsets: every read is bounds-checked and anything it does not understand is rejected.
 // Entry-name policy (core/package/entry_policy.h) is applied by the caller before names are used.
 #pragma once
@@ -12,6 +12,9 @@
 namespace lumora::scene {
 
 // Writes entries (sorted by name, as FileMap iterates) into a ZIP byte stream. Fixed timestamps for reproducible output.
+// level 0 stores everything; 1 and 6 deflate an entry only when that makes it smaller.
+std::vector<std::uint8_t> write_zip(const FileMap& files, int level = 6);
+// Same as write_zip(files, 0).
 std::vector<std::uint8_t> write_zip_store(const FileMap& files);
 
 struct ZipReadResult {
@@ -21,6 +24,6 @@ struct ZipReadResult {
 };
 
 ZipReadResult read_zip_store(const std::uint8_t* data, std::size_t size, std::uint64_t max_entries = 10000,
-                             std::uint64_t max_total_bytes = 2048ull << 20);
+                             std::uint64_t max_total_bytes = 2048ull << 20, std::uint64_t max_ratio = 200);
 
 }  // namespace lumora::scene

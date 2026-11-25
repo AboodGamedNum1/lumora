@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
   if (argc == 4 && std::strcmp(argv[1], "pack") == 0) {
     const auto r = pack_directory(argv[2]);
     if (!r.ok) { std::fprintf(stderr, "pack failed: %s\n", r.error.c_str()); return 1; }
-    const auto z = write_zip_store(r.files);
+    const auto z = write_zip(r.files, 6);
     std::ofstream out(argv[3], std::ios::binary | std::ios::trunc);
     out.write(reinterpret_cast<const char*>(z.data()), static_cast<std::streamsize>(z.size()));
     if (!out) { std::fprintf(stderr, "cannot write %s\n", argv[3]); return 1; }

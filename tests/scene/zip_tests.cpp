@@ -51,7 +51,44 @@ TEST_CASE("zip reader rejects unsupported features", "[zip]") {
     if (z[i] == 0x50 && z[i + 1] == 0x4b && z[i + 2] == 0x01 && z[i + 3] == 0x02) { cd = i; break; }
   REQUIRE(cd != 0);
   auto m = z; m[cd + 10] = 8;
-  CHECK_FALSE(read_zip_store(m.data(), m.size()).ok);
+  CHECK_FALSE(read_zip_store(m.data(), m.size()).ok);  // method 8 with stored bytes is not valid deflate data
   auto e = z; e[cd + 8] |= 1;
   CHECK_FALSE(read_zip_store(e.data(), e.size()).ok);
+}
+
+TEST_CASE("deflated zip round trip, bomb guard and hostile input", "[zip]") {
+  FileMap f = sample();
+  std::string text;
+  for (int i = 0; i < 400; ++i) text += "parallax layer sky hills aurora ";
+  f["big.txt"] = std::vector<std::uint8_t>(text.begin(), text.end());
+  const auto stored = write_zip(f, 0);
+  for (int level : {1, 6}) {
+    const auto z = write_zip(f, level);
+    CHECK(z.size() < stored.size());
+    CHECK(z == write_zip(f, level));
+    const auto r = read_zip_store(z.data(), z.size());
+    REQUIRE(r.ok);
+    CHECK(r.files == f);
+    for (std::size_t n = 0; n < z.size(); n += 11) (void)read_zip_store(z.data(), n);
+    for (std::size_t i = 0; i < z.size(); i += 5) {
+      auto c = z;
+      c[i] ^= 0xA5;
+      (void)read_zip_store(c.data(), c.size());
+    }
+  }
+  // A highly compressible entry is stored rather than deflated past the ratio guard, and still loads.
+  FileMap zeros;
+  zeros["z.bin"] = std::vector<std::uint8_t>(1 << 20, 0);
+  const auto zz = write_zip(zeros, 6);
+  const auto zr = read_zip_store(zz.data(), zz.size());
+  REQUIRE(zr.ok);
+  CHECK(zr.files == zeros);
+  // A forged deflate entry that declares a huge size is refused by the ratio guard.
+  auto z = write_zip(f, 6);
+  std::size_t cd = 0;
+  for (std::size_t i = 0; i + 4 < z.size(); ++i)
+    if (z[i] == 0x50 && z[i + 1] == 0x4b && z[i + 2] == 0x01 && z[i + 3] == 0x02) { cd = i; break; }
+  REQUIRE(cd != 0);
+  z[cd + 27] = 0x40;  // uncompressed size field high byte: about 1 GB
+  CHECK_FALSE(read_zip_store(z.data(), z.size()).ok);
 }

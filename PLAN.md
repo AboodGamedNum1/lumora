@@ -30,7 +30,7 @@ Status values: not started, in progress, done (exit criteria met in CI, with the
 | M0-M1 | GNOME wallpaper-method spike (agent-side evidence only) | source review done (docs/linux-wallpaper-matrix.md); nested-shell run still to do |
 | M1 | RHI core: Vulkan, GLES 3.2, D3D12 build and WARP spike | done: exit criteria met and CI-verified, with first-slice backends and a carry-over list (section 5) |
 | M2 | Runtime MVP: WallpaperService, pause rules, own process, crash breaker | done: exit criteria met and CI-verified (software evidence on API 29, 34, 36 emulators), with caveats in section 5b |
-| M3 | Scene format and packer | in progress: JSON model, manifest, SHA-256 checksums, scene.json draft, in-memory loader and stored-only ZIP (CI-verified); packer CLI, sample scene samples/aurora and pack-load round-trip test done (CI pending); deflate or ZIP64, entry-policy wiring and rendering the sample (M3S) remain; signature block rule done (reserved entry is rejected) |
+| M3 | Scene format and packer | in progress: JSON model, manifest, SHA-256 checksums, scene.json draft, in-memory loader (CI-verified); ZIP with deflate (contributor DEFLATE module merged, wiring CI pending), packer CLI, sample scene samples/aurora and pack-load round-trip tests; entry-policy wiring and rendering the sample (M3S) remain; signature block rule done |
 | M3S | Vertical slice: 2D parallax scene end to end in CI | not started |
 | M4 | Renderer features (glTF, PBR, 2D, text; shadows, post-FX, particles, video) | not started |
 | M5 | Scripting: Lua sandbox, cancellation and recovery | not started |
@@ -106,7 +106,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 
 The product does not render a scene yet: no scene format, no Lua, no Android wallpaper service, no Linux wallpaper runtime, no editor beyond an empty window.
 
-M1 carry-over (not exit criteria as written, still to do): Vulkan swapchain, descriptor sets, vertex buffers, depth, blending and sync beyond a fence; GLES parity beyond the triangle and an ES 3.2 context check; SPIR-V to GLSL ES through SPIRV-Cross (pinned, not yet fetched); DXC pin consumption; nested-shell GNOME spike run; branch protection (owner setting); real-GPU confirmation stays with gate G5.
+M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES through SPIRV-Cross is done and CI-verified on GLES llvmpipe, software evidence): Vulkan swapchain, descriptor sets, vertex buffers, depth, blending and sync beyond a fence; GLES parity beyond the triangle and an ES 3.2 context check; DXC pin consumption; nested-shell GNOME spike run; branch protection (owner setting); real-GPU confirmation stays with gate G5.
 
 ## 6b. MW: Windows desktop runtime (planned)
 

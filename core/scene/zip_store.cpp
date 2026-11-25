@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "deflate.h"
+
 namespace lumora::scene {
 namespace {
 std::uint32_t crc32(const std::uint8_t* p, std::size_t n) {
@@ -31,23 +33,32 @@ struct Reader {
 };
 }  // namespace
 
-std::vector<std::uint8_t> write_zip_store(const FileMap& files) {
+std::vector<std::uint8_t> write_zip(const FileMap& files, int level) {
   std::vector<std::uint8_t> out;
-  struct Rec { std::string name; std::uint32_t crc, size, off; };
+  struct Rec { std::string name; std::uint32_t crc, csize, usize, off, method; };
   std::vector<Rec> recs;
   for (const auto& [name, data] : files) {
-    Rec r{name, crc32(data.data(), data.size()), static_cast<std::uint32_t>(data.size()), static_cast<std::uint32_t>(out.size())};
-    u32(out, 0x04034b50); u16(out, 20); u16(out, 0x0800); u16(out, 0); u16(out, 0); u16(out, 0x21);
-    u32(out, r.crc); u32(out, r.size); u32(out, r.size);
+    std::vector<std::uint8_t> packed;
+    std::uint32_t method = 0;
+    if (level > 0 && !data.empty()) {
+      packed = package::deflate_raw(data.data(), data.size(), level);
+      // Only when smaller, and only within the reader's ratio guard, so every package this writer makes also loads.
+      if (!packed.empty() && packed.size() < data.size() && data.size() <= packed.size() * 200 + 1024) method = 8;
+    }
+    const std::vector<std::uint8_t>& body = method == 8 ? packed : data;
+    Rec r{name, crc32(data.data(), data.size()), static_cast<std::uint32_t>(body.size()),
+          static_cast<std::uint32_t>(data.size()), static_cast<std::uint32_t>(out.size()), method};
+    u32(out, 0x04034b50); u16(out, 20); u16(out, 0x0800); u16(out, method); u16(out, 0); u16(out, 0x21);
+    u32(out, r.crc); u32(out, r.csize); u32(out, r.usize);
     u16(out, static_cast<std::uint32_t>(name.size())); u16(out, 0);
     out.insert(out.end(), name.begin(), name.end());
-    out.insert(out.end(), data.begin(), data.end());
+    out.insert(out.end(), body.begin(), body.end());
     recs.push_back(r);
   }
   const auto cd_off = static_cast<std::uint32_t>(out.size());
   for (const auto& r : recs) {
-    u32(out, 0x02014b50); u16(out, 20); u16(out, 20); u16(out, 0x0800); u16(out, 0); u16(out, 0); u16(out, 0x21);
-    u32(out, r.crc); u32(out, r.size); u32(out, r.size);
+    u32(out, 0x02014b50); u16(out, 20); u16(out, 20); u16(out, 0x0800); u16(out, r.method); u16(out, 0); u16(out, 0x21);
+    u32(out, r.crc); u32(out, r.csize); u32(out, r.usize);
     u16(out, static_cast<std::uint32_t>(r.name.size())); u16(out, 0); u16(out, 0); u16(out, 0); u16(out, 0);
     u32(out, 0); u32(out, r.off);
     out.insert(out.end(), r.name.begin(), r.name.end());
@@ -59,8 +70,10 @@ std::vector<std::uint8_t> write_zip_store(const FileMap& files) {
   return out;
 }
 
+std::vector<std::uint8_t> write_zip_store(const FileMap& files) { return write_zip(files, 0); }
+
 ZipReadResult read_zip_store(const std::uint8_t* data, std::size_t size, std::uint64_t max_entries,
-                             std::uint64_t max_total_bytes) {
+                             std::uint64_t max_total_bytes, std::uint64_t max_ratio) {
   ZipReadResult res;
   auto fail = [&](const char* m) { res.ok = false; res.error = m; res.files.clear(); return res; };
   Reader R{data, size};
@@ -87,8 +100,8 @@ ZipReadResult read_zip_store(const std::uint8_t* data, std::size_t size, std::ui
     if (!R.has(p + 46, std::uint64_t{nlen} + xlen + clen)) return fail("entry header out of range");
     if (flags & 0x1) return fail("encrypted entries are not supported");
     if (flags & 0x8) return fail("data descriptors are not supported");
-    if (method != 0) return fail("only stored entries are supported");
-    if (csize != usize) return fail("stored entry with different sizes");
+    if (method != 0 && method != 8) return fail("only stored and deflate entries are supported");
+    if (method == 0 && csize != usize) return fail("stored entry with different sizes");
     if (csize == 0xFFFFFFFFu) return fail("ZIP64 is not supported");
     sum += usize;
     if (sum > max_total_bytes) return fail("archive too large");
@@ -96,11 +109,22 @@ ZipReadResult read_zip_store(const std::uint8_t* data, std::size_t size, std::ui
     if (name.empty() || name.back() == '/') return fail("directory or empty entry names are not supported");
     if (!R.has(lho, 30) || R.r32(lho) != 0x04034b50) return fail("bad local header");
     const std::uint64_t dstart = std::uint64_t{lho} + 30 + R.r16(lho + 26) + R.r16(lho + 28);
-    if (!R.has(dstart, usize)) return fail("entry data out of range");
+    if (!R.has(dstart, csize)) return fail("entry data out of range");
     if (R.r16(lho + 26) != nlen || std::memcmp(data + lho + 30, name.data(), nlen) != 0) return fail("local and central names differ");
-    if (crc32(data + dstart, usize) != crc) return fail("crc mismatch");
     if (res.files.count(name)) return fail("duplicate entry name");
-    res.files[name] = std::vector<std::uint8_t>(data + dstart, data + dstart + usize);
+    std::vector<std::uint8_t> content;
+    if (method == 0) {
+      content.assign(data + dstart, data + dstart + usize);
+    } else {
+      // Compression bomb guard: the declared size is bounded by a ratio before anything is allocated.
+      if (std::uint64_t{usize} > std::uint64_t{csize} * max_ratio + 1024) return fail("compression ratio too high");
+      auto inf = package::inflate_raw(data + dstart, csize, usize);
+      if (inf.status != package::InflateStatus::Ok) return fail("invalid deflate data");
+      if (inf.data.size() != usize) return fail("deflate size differs from the declared size");
+      content = std::move(inf.data);
+    }
+    if (crc32(content.data(), content.size()) != crc) return fail("crc mismatch");
+    res.files[name] = std::move(content);
     p += 46 + std::size_t{nlen} + xlen + clen;
   }
   res.ok = true;
