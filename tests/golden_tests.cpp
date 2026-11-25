@@ -30,10 +30,7 @@ void write_bytes(const fs::path& p, const std::string& bytes) {
   f << bytes;
 }
 
-bool bless_mode() {
-  const char* b = std::getenv("LUMORA_BLESS_GOLDEN");
-  return b && *b == '1';
-}
+bool bless_mode() { return golden::bless_enabled(); }
 
 golden::Image pixels(std::initializer_list<std::uint8_t> rgb, unsigned w, unsigned h) {
   return golden::Image{w, h, std::vector<std::uint8_t>(rgb)};

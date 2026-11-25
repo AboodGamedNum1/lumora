@@ -82,6 +82,20 @@ inline Result compare(const Image& a, const Image& b, unsigned tolerance, Image*
   return r;
 }
 
+// True when LUMORA_BLESS_GOLDEN=1. MSVC flags std::getenv (C4996), so it uses _dupenv_s there.
+inline bool bless_enabled() {
+#ifdef _MSC_VER
+  char* value = nullptr;
+  std::size_t length = 0;
+  const bool on = _dupenv_s(&value, &length, "LUMORA_BLESS_GOLDEN") == 0 && value != nullptr && *value == '1';
+  std::free(value);
+  return on;
+#else
+  const char* b = std::getenv("LUMORA_BLESS_GOLDEN");
+  return b && *b == '1';
+#endif
+}
+
 // Compare `actual` against <golden_dir>/<name>.ppm. Always writes the actual image to
 // <out_dir>/<name>.actual.ppm. Set LUMORA_BLESS_GOLDEN=1 to overwrite the baseline.
 inline Result check(const std::string& name, const Image& actual, const std::string& golden_dir,
@@ -89,7 +103,7 @@ inline Result check(const std::string& name, const Image& actual, const std::str
   namespace fs = std::filesystem;
   write_ppm(fs::path(out_dir) / (name + ".actual.ppm"), actual);
   const fs::path base = fs::path(golden_dir) / (name + ".ppm");
-  if (const char* b = std::getenv("LUMORA_BLESS_GOLDEN"); b && *b == '1') {
+  if (bless_enabled()) {
     write_ppm(base, actual);
     return {true, 0, 0, "baseline written"};
   }
