@@ -71,6 +71,7 @@ Exit criteria (from `docs/milestones.md`): CI green on Linux and Windows and bui
 | WARP and software-Vulkan-on-Windows spike | done: WARP D3D12 works (see above). Software Vulkan on Windows works: the Vulkan backend builds against the system loader (spike option, pinned Vulkan headers) and the Vulkan tests pass on the Windows runner with a pinned Mesa lavapipe ICD registered in the registry (the loader ignores environment overrides when elevated). Label: CI-verified software evidence, no validation layer on Windows, never RX 570 evidence. Run: https://github.com/Captain3BoOd/lumora/actions/runs/45634033800 |
 | GNOME spike start | done: source review of the reference extension recorded in docs/linux-wallpaper-matrix.md |
 | Feature-test header check for `docs/cpp-standard.md` | not started |
+| Null-backend RHI unit tests (33 test cases, external contribution by RashaBoByte, reviewed and merged after green CI) | done (CI-verified) |
 
 ## 5. M1 detail (exit criteria met)
 
