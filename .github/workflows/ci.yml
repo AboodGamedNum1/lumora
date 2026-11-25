@@ -24,7 +24,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build libx11-dev libxext-dev \
+          sudo apt-get install -y --no-install-recommends ninja-build libx11-dev libxext-dev libxtst-dev libxfixes-dev libxrender-dev libxinerama-dev \
             libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev \
             libegl-dev libgl-dev libdrm-dev libgbm-dev libasound2-dev
       - name: Record toolchain versions

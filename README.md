@@ -28,7 +28,7 @@ Requirements: CMake 3.22 or newer, a C++23 compiler (GCC, Clang or MSVC), Python
 Linux (Ubuntu) also needs the SDL3 build dependencies for the editor, for example:
 
 ```
-sudo apt-get install build-essential cmake ninja-build python3 libx11-dev libxext-dev \
+sudo apt-get install build-essential cmake ninja-build python3 libx11-dev libxext-dev libxtst-dev libxfixes-dev libxrender-dev libxinerama-dev \
   libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev \
   libegl-dev libgl-dev libdrm-dev libgbm-dev libasound2-dev
 ```
