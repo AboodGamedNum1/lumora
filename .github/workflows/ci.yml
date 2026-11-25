@@ -75,6 +75,10 @@ jobs:
           cmake -S . -B build-vk -DLUMORA_BUILD_EDITOR=OFF -DLUMORA_WIN_VULKAN_SPIKE=ON "-DLUMORA_PRECOMPILED_SPV_DIR=$PWD/tests/shaders/precompiled"
           cmake --build build-vk --config Release --parallel
           $env:VK_DRIVER_FILES = "$PWD\mesa\x64\lvp_icd.x86_64.json"
+          $env:VK_ICD_FILENAMES = $env:VK_DRIVER_FILES
+          $env:VK_LOADER_DEBUG = "error,warn,driver"
+          Test-Path $env:VK_DRIVER_FILES
+          Get-Content $env:VK_DRIVER_FILES
           $env:LUMORA_ALLOW_NO_VALIDATION = "1"
           & build-vk/tests/Release/lumora_tests.exe
       - name: Upload golden output
