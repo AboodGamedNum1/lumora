@@ -25,6 +25,21 @@ struct Placed {
 // U+FFFD for the first byte only and decoding continues at the next byte (so n bad bytes give n replacement characters).
 // Code points above 0xFFFF map to glyph 0 (ttf::glyph_index rule), they are not an error.
 
+// Decisions on the open reading questions (binding):
+//  * Per glyph, in this order: ttf::glyph_index, then ttf::glyph_advance, then the check of that glyph's own pen position against
+//    +/- 2^30; the width is checked after the last glyph. The first error in glyph order wins, so a lookup error of an earlier glyph
+//    beats an overflow found later (including the final width); the whole run is then rejected and nothing is written.
+//  * Position arithmetic is 64-bit, not 128-bit: for U >= 0, round(U * size_fx / upem) = (2 * U * size_fx + upem) / (2 * upem) with
+//    unsigned 64-bit integer division (U is at most 4096 * 65535, size_fx at most 2^22, so the product fits).
+//  * The extent of out for the Overlap check is always out_capacity * sizeof(Placed) bytes, whatever the glyph count is; capacity 0
+//    is an empty range that overlaps nothing. out must still be non-null, even for an empty text.
+//  * An empty text still runs NullBuffer, BadSize, BufferTooSmall and Overlap before count 0 and width 0 are stored. The text pointer
+//    may be null only when len is 0.
+//  * NullBuffer for the font means font.data null; out, out_count and width_fx are mandatory.
+//  * count_code_points: a null count gives false and writes nothing; null text with len 0 and a valid count gives true and 0.
+//  * digest_placed: a null pointer hashes zero bytes whatever count is.
+//  * U+FFFD and supplementary code points go through ttf::glyph_index like any other code point (supplementary gives glyph 0, Ok).
+
 // Shapes the text. For each code point in order: glyph = ttf::glyph_index; advance = ttf::glyph_advance(glyph) in font units;
 // the glyph is placed at x_fx = round(U * size_fx / units_per_em), where U is the sum of the advances of all earlier glyphs in
 // font units (cumulative rounding, nearest, ties away from zero, exact 64-bit integer arithmetic; the per-glyph rounding error
