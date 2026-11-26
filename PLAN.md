@@ -147,6 +147,7 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | Load-time budgets (core/package/load_budget, texture memory, scripts, nodes, audio) | merged (09d9746); CI-verified on Linux and Windows; 87 source mutants with 85 killed and 2 argued equivalent; software evidence only |
 | Capability model (core/package/capabilities, declared and granted permissions) | merged (a2f70e0); CI-verified on Linux and Windows; 80 source mutants with 77 killed and 3 argued equivalent; software evidence only |
 | Audio analysis core (core/audio/analysis: level, envelope follower, integer FFT power spectrum, band energies) | interface and stubs on main; implementation not started (contributor scope); not CI-verified yet |
+| Fixed-timestep accumulator (core/timing/fixed_step: clamped deltas, catch-up cap, interpolation factor) | interface and stubs on main; implementation not started (contributor scope); not CI-verified yet |
 | glTF binary loader (core/glb, M4 asset groundwork, written by the agent) | merged (98e2aaf), CI-verified on Linux and Windows (13 of 13 checks); container, JSON, buffer views, accessors, triangle meshes, limits, fuzz target with corpus, golden digest from an independent Python reference; software evidence only |
 
 ## 6b. MW: Windows desktop runtime (planned)
