@@ -40,8 +40,13 @@ bool packer_reset(ShelfPacker* packer);
 // height >= the cell height and whose used_x + cell width <= atlas width, choose the one with the smallest height (lowest index on a
 // tie) and place there at (used_x, shelf.y); used_x += cell width. If none fits, open a new shelf at y = next_y with height = cell height
 // when shelf_count < kMaxShelves and next_y + cell height <= atlas height (then place at (0, y), used_x = cell width, next_y += cell
-// height, shelf_count += 1); otherwise NoSpace. On Ok, used_area += w * h. A packer with inconsistent hand-built fields is not
-// validated: the rules above are applied to whatever the fields hold, in shelf index order.
+// height, shelf_count += 1); otherwise NoSpace. On Ok, used_area += w * h. Decisions for extreme and hand-built values: all sums and comparisons in
+// packer_alloc (w + kPad, h + kPad, used_x + cell width, next_y + cell height) are computed in uint64, so a huge input such as UINT32_MAX
+// gives BadSize and an overflowing fit is a rejected fit, never a wrap. Hand-built fields are used as stored, without validation: shelf
+// y and next_y are not checked, dimensions above kMaxAtlas are not rejected by alloc (only a zero width or height means NotInitialized),
+// and at most the first min(shelf_count, kMaxShelves) shelves are inspected; a new shelf is opened only when the stored shelf_count is
+// below kMaxShelves. No fit gives NoSpace with every field unchanged. used_area saturates at UINT64_MAX (no wrap). packer_init on
+// success resets every field and every shelf; on failure the whole prior state is preserved.
 AllocResult packer_alloc(ShelfPacker* packer, std::uint32_t w, std::uint32_t h, std::uint32_t* x, std::uint32_t* y);
 
 // FNV-1a 64 byte-wise over 32-bit little-endian words (offset basis start; a null packer gives the basis): width, height, shelf_count,
