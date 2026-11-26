@@ -60,13 +60,19 @@ bool valid(const ScaleConfig& c);
 //  2. Else frame_ns <= fast threshold: fast_run += 1 (saturating), overrun_run = 0. If fast_run >= recover_frames and
 //     notch > 0: notch -= 1, fast_run = 0, changed.
 //  3. Else both runs reset to 0.
-// A state whose notch is above max_notch is first clamped down to max_notch.
+// A state whose notch is above max_notch is first clamped down to max_notch, without resetting the runs. *changed is true
+// when the final notch differs from the caller's original notch, so a clamp alone (for example 9 with max_notch 3)
+// reports true. Failure leaves state and *changed untouched; success always writes *changed when it is not null.
+// Thresholds are exact (saturated only if the exact value exceeds UINT64_MAX; a saturated overrun threshold can never
+// be exceeded); the overrun and fast classes cannot coincide. Runs saturate at UINT32_MAX and a frame-count limit of
+// UINT32_MAX fires on reaching it. At max_notch the overrun run keeps counting; at notch 0 the fast run keeps counting.
 bool on_frame(ScaleState* state, std::uint64_t frame_ns, std::uint64_t budget_ns, const ScaleConfig& config,
               bool* changed);
 
 // The platform reported throttling: step down one notch now (capped at max_notch) and reset both runs. Returns false
 // and changes nothing when state is null or the config is invalid; *changed (if not null) tells whether the notch
-// moved.
+// moved. The step is notch + 1 capped at max_notch after the clamp above; both runs reset on every call, even at max_notch;
+// *changed compares the final notch with the original one, so an oversized notch clamped to max_notch reports true.
 bool on_thermal_throttle(ScaleState* state, const ScaleConfig& config, bool* changed);
 
 const char* to_string(FrameCap cap);  // "Auto", "Fps30", "Fps60", "Fps90", "Fps120", "unknown" for invalid values
