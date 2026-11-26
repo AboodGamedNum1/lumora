@@ -35,7 +35,11 @@ std::uint32_t recent_crashes(const CrashLog& log, std::uint64_t now_ms, std::uin
 // Records a crash at now_ms. Returns false and changes nothing when log is null or the policy is invalid. Rules:
 //  1. Drop entries that are outside the window (see above); the order of the rest is kept.
 //  2. Append now_ms at the end. If the log is full, drop the oldest entry first.
-//  3. A count above kMaxCrashes on input is first clamped to kMaxCrashes.
+//  3. A count above kMaxCrashes on input is clamped to kMaxCrashes BEFORE rule 1 (the numbering is not the order).
+//  4. Entries are never sorted by time: insertion order is kept and now_ms is appended even if it is older than the
+//     last entry (a backwards clock). If the log is still full after pruning, entry 0 is discarded.
+//  5. After a successful call every unused slot (index >= count) is zero, so persisted logs are canonical.
+//  6. On a null log or an invalid policy nothing is touched. The caller chooses which backend's log to pass.
 bool record_crash(CrashLog* log, std::uint64_t now_ms, const Policy& policy);
 
 enum class Action : std::uint8_t {
@@ -53,7 +57,11 @@ struct Decision {
 //  1. total = recent(vulkan) + recent(gles) in the window. If total >= max_crashes: Disable.
 //  2. Else if gles_available and recent(vulkan) >= backend_crashes: Run on Gles.
 //  3. Else Run on Vulkan.
-// A null log pointer counts as an empty log.
+// A null log pointer counts as an empty log. If gles is unavailable and the Vulkan threshold is reached while the
+// total is below max_crashes, the answer is Run on Vulkan. Disable reports backend Vulkan. A null out or an invalid
+// policy leaves out untouched.
+// recent_crashes does no policy validation: a zero window gives 0 (future timestamps included, age 0 is not below 0).
+// to_string returns "Run", "Disable", "Vulkan", "Gles", and "unknown" (lowercase, never null) for invalid values.
 bool decide(const CrashLog* vulkan, const CrashLog* gles, std::uint64_t now_ms, const Policy& policy,
             bool gles_available, Decision* out);
 
