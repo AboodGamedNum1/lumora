@@ -148,6 +148,7 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | Capability model (core/package/capabilities, declared and granted permissions) | merged (a2f70e0); CI-verified on Linux and Windows; 80 source mutants with 77 killed and 3 argued equivalent; software evidence only |
 | Audio analysis core (core/audio/analysis: level, envelope follower, integer FFT power spectrum, band energies) | merged (5e7abd2); CI-verified on Linux and Windows; 82 source mutants with 77 killed (7 by crash only) and 5 argued equivalent from documented magnitude bounds; software evidence only |
 | Fixed-timestep accumulator (core/timing/fixed_step: clamped deltas, catch-up cap, interpolation factor) | interface and stubs on main; implementation not started (contributor scope); not CI-verified yet |
+| Crash-loop breaker (core/lifecycle/crash_breaker: per scene and backend crash logs, window policy, Vulkan to GLES then disable) | interface and stubs on main; implementation not started (contributor scope); not CI-verified yet |
 | glTF binary loader (core/glb, M4 asset groundwork, written by the agent) | merged (98e2aaf), CI-verified on Linux and Windows (13 of 13 checks); container, JSON, buffer views, accessors, triangle meshes, limits, fuzz target with corpus, golden digest from an independent Python reference; software evidence only |
 
 ## 6b. MW: Windows desktop runtime (planned)
