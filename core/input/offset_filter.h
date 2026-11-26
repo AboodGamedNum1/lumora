@@ -22,7 +22,7 @@ struct OffsetFilter {
 // Valid config: smooth_percent <= 99 and 0 <= deadzone <= kMaxDeadzone.
 bool valid(const OffsetFilterConfig& c);
 
-// Clears the filter (x = 0, y = 0, primed = false). Returns false when f is null.
+// Clears the filter (x = 0, y = 0, primed = false). Returns false when f is null, true otherwise.
 bool reset(OffsetFilter* f);
 
 // One step with the raw input (in_x, in_y), any int32 values. Returns false and writes nothing (not the filter, not the outputs)
@@ -34,6 +34,9 @@ bool reset(OffsetFilter* f);
 //     unsmoothed). Else state = state + trunc((value - state) * (100 - smooth_percent) / 100), where trunc is C++ integer division
 //     (rounds toward zero), computed in 64-bit. The state therefore stalls within 99 units of the target at smooth_percent 99
 //     (accepted: below 0.2 percent of full scale); at smooth_percent 0 it equals the value.
+// An unprimed filter has its state overwritten on both axes by the value from step 2, whatever hand-built x and y it held. The
+// config is validated on every step (smooth_percent 0 .. 99, deadzone 0 .. kMaxDeadzone inclusive). If out_x and out_y are the same
+// pointer, out_x is written first and then out_y (nothing else is promised for aliasing; tests do not alias them).
 // Then primed = true and *out_x, *out_y receive the new state. A filter whose x or y is outside +/- kOne (hand-built) is repaired
 // before step 3 by clamping its state to [-kOne, kOne] (primed is kept as it is).
 bool step(OffsetFilter* f, std::int32_t in_x, std::int32_t in_y, const OffsetFilterConfig& config, std::int32_t* out_x,
