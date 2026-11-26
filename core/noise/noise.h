@@ -52,7 +52,7 @@ Q16 cellular2(std::uint32_t seed, Pos x, Pos y);
 // kind selects value2, gradient2 or cellular2. Returns 0..65535.
 enum class Kind : std::uint8_t { Value = 0, Gradient = 1, Cellular = 2 };
 // An invalid kind or octaves value returns 0 (fill_image reports them as errors). Weights are 128 >> i for octave i; the result
-// is (sum of weight * value + total_weight / 2) / total_weight with integer division.
+// is (2 * sum + total_weight) / (2 * total_weight) with integer division, that is the weighted average rounded half up exactly.
 Q16 fbm2(Kind kind, std::uint32_t seed, Pos x, Pos y, std::uint32_t octaves);
 
 enum class Status : std::uint8_t {
@@ -62,7 +62,7 @@ enum class Status : std::uint8_t {
   BadKind,     // Kind outside the enum
   BadOctaves,  // octaves is 0 or > 8
 };
-// status_text gives the lower-case spaced enum name ("ok", "null buffer", "bad size", ...) and "unknown noise status" for an unknown value.
+// status_text gives the lower-case spaced enum name ("ok", "null buffer", "bad size", ...) and "unknown" for an unknown value.
 const char* status_text(Status s);
 constexpr std::uint32_t kMaxSize = 8192;
 
