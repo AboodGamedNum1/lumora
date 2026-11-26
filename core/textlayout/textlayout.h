@@ -54,7 +54,9 @@ struct LayoutOptions {
   Fixed max_width = 0;   // 0 = no wrapping; otherwise lines wrap at spaces (U+0020) or are broken inside a word if one
                          // word is wider than max_width
   Align align = Align::Left;
-  std::uint32_t max_glyphs = 65536;  // layout stops after this many drawn glyphs (sets truncated)
+  std::uint32_t max_glyphs = 65536;  // truncation: the text is cut right after the max_glyphs-th drawn glyph and laid out
+                                     // as if the input ended there (wrapping, alignment, line_count, width, height all
+                                     // describe that prefix). truncated is true only if a further drawn glyph would follow.
 };
 
 struct Quad {
