@@ -118,7 +118,7 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | CPU particle emitter (core/particles, M4 groundwork) | merged (8d8c3c0), CI-verified on Linux and Windows with an identical golden digest; software evidence only |
 | Color and gradient module (core/color, M4 groundwork) | merged (0861e16), CI-verified on Linux and Windows with identical golden digests; software evidence only |
 | 2D path and spline module (core/spline, M4 groundwork) | merged (f5950e6), CI-verified on Linux and Windows with identical golden digests; software evidence only |
-| 2D polygon geometry module (core/geom, M4 groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
+| 2D polygon geometry module (core/geom, M4 groundwork) | merged (ae08058), exact orientation, CI-verified on Linux and Windows with identical golden digests; software evidence only |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
