@@ -40,3 +40,20 @@ hand-built packers) and four seeded random corpora, each with result digests and
 
 Other tests: an oracle that checks placed cells lie inside the atlas and never overlap, hand-computed placements, the check order,
 the 64-shelf limit, saturation of `used_area`, and clearing of the last shelf slot.
+
+## Mutation testing
+
+Evidence label: local only. 88 real source mutants of `core/shelfpack/shelf_pack.cpp` were built and run against the test file, each one a
+single edit. They cover: the checks in `packer_init` and `packer_reset` (null, zero and over-limit sizes, each field assignment, the
+clear step); the null and not-initialized checks and their order in `packer_alloc`; 32-bit instead of 64-bit cell and fit arithmetic;
+the padding; the BadSize bounds (`>` against `>=`, a dropped check); the scan limit and scan range; the height, width and tie rules of the
+shelf choice; the placement and the `used_x` update; the new shelf conditions (shelf limit, bottom edge) and its fields; the `used_area`
+update (wrap instead of saturation, early or late saturation, padded or 32-bit addend); the writes to `x` and `y`; and every word of
+`packer_digest` plus the FNV prime and byte count.
+
+87 of the 88 were killed. The mutants that dereference a null packer are killed by the UBSan runtime error in the null tests. Two
+mutants survived an earlier test set (shelf slot 63 not cleared, and a 32-bit `w * h`); tests for them were added and both are now killed.
+
+One mutant survives, and it is equivalent. Saturation tests `add > UINT64_MAX - used_area`; the mutant tests `add >= UINT64_MAX - used_area`.
+They differ only when `add == UINT64_MAX - used_area`. Then the original takes the sum branch and gets `used_area + add == UINT64_MAX`,
+and the mutant takes the saturation branch and gets `UINT64_MAX`. Both give the same value, so no test can tell them apart.
