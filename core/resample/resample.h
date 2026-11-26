@@ -50,7 +50,11 @@ const char* status_text(Status s);
 //   CatmullRom: taps x0 - 1 .. x0 + 2 with weights from the Catmull-Rom cubic evaluated EXACTLY in integers at fx (the weight
 //   formulas, their Q16 rounding and the rule that the four weights sum to exactly 65536 are defined by the contributor in
 //   docs/resample.md, with a proof of the bounds); the 2D result is the double sum / 2^32 rounded half up, then clamped to 0..255.
-// For every filter the last step clamps each colour channel to the result alpha, so the output satisfies R, G, B <= A.
+// For every filter the last step clamps each colour channel to the result alpha, so the output satisfies R, G, B <= A. The clamp
+// wins over any identity: Nearest, Box and Bilinear at identical size are byte exact copies only for valid premultiplied pixels
+// (R, G, B <= A); a malformed pixel is clamped by every filter alike (so Box equals Nearest at identical size in all cases).
+// Catmull-Rom weights: the symmetric rule is used, the rounding correction that makes the sum exactly 65536 goes into the
+// centre tap w1 for fx <= 32768 and into w2 otherwise; the docs must bound the correction and prove |sum| fits 64 bits.
 // Checks in enum order (NullBuffer, BadSize, BadFilter, Overlap). Nothing is written on error. Stride padding is never written.
 Status resize(const ConstSurface& src, const Surface& dst, Filter filter);
 
@@ -61,7 +65,9 @@ std::uint32_t mip_count(std::uint32_t width, std::uint32_t height);
 bool mip_level_size(std::uint32_t width, std::uint32_t height, std::uint32_t level, std::uint32_t* out_w, std::uint32_t* out_h);
 std::uint64_t mip_chain_bytes(std::uint32_t width, std::uint32_t height);
 
-// Writes all levels tightly packed (stride = level width * 4), level 0 (a copy of the source) first. Checks: NullBuffer
+// Writes all levels tightly packed (stride = level width * 4), level 0 first as a literal byte copy of the source rows (no
+// clamp); every later level is the Box resize of the previous tight level, clamped as above. Overlap is decided on the
+// bytes [out, out + mip_chain_bytes) against the source rows, whatever the capacity, and comes before BufferTooSmall. Checks: NullBuffer
 // (src.data or out null), BadSize, Overlap (out range against src rows), BufferTooSmall (capacity < mip_chain_bytes).
 Status build_mip_chain(const ConstSurface& src, std::uint8_t* out, std::size_t capacity);
 
