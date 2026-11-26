@@ -35,7 +35,7 @@ enum class Moves : std::uint8_t { Four = 0, Eight = 1 };
 
 // Cost to enter a cell with byte c: orthogonal c * 10, diagonal c * 14 (integers, 14 ~ 10 * sqrt(2)).
 // Diagonal steps are allowed only when both orthogonally adjacent cells are not blocked (no corner cutting).
-std::uint32_t step_cost(std::uint8_t c, bool diagonal);
+std::uint32_t step_cost(std::uint8_t c, bool diagonal);  // returns 0 for a blocked byte (never used for movement)
 
 enum class PathStatus : std::uint8_t {
   Found = 0,
@@ -50,7 +50,9 @@ const char* path_status_text(PathStatus s);
 
 struct PathResult {
   PathStatus status = PathStatus::NoPath;
-  std::uint32_t total_cost = 0;    // sum of step costs along the path (start cell not charged)
+  std::uint32_t total_cost = 0;    // sum of step costs along the path (start cell not charged). Saturates at 0xFFFFFFFF
+                                   // (an overflow sentinel: every real cost is even, so it cannot be a real cost); the
+                                   // status stays Found and the path stays exact. Sum step_cost for the exact value.
   std::size_t path_length = 0;     // number of cells including start and goal
   std::size_t expanded = 0;        // cells popped from the open set (for tests and tuning)
 };
@@ -60,6 +62,11 @@ struct PathResult {
 // Determinism rules: ties in f are broken by lower h, then lower y, then lower x of the cell; neighbors are expanded
 // in the order N (0,-1), E (1,0), S (0,1), W (-1,0), then NE, SE, SW, NW. The returned path is the one this rule
 // produces, start to goal. Writes at most `capacity` cells to out_path (null out_path = length only).
+// A neighbor's parent is replaced only for a strictly lower g; the first parent found at an equal g stays.
+// Validation order: BadMap, OutOfBounds (start, then goal), Blocked (start, then goal), BadMoves, then the search;
+// every error returns zero in all result fields. A non-null out_path smaller than the path (capacity 0 included) gives
+// BufferTooSmall with the first `capacity` cells written and the true length and cost reported. A null out_path is
+// length only and returns Found whatever the capacity. NoPath counts every reachable cell in `expanded`.
 // start == goal returns Found with a one-cell path and cost 0.
 PathResult find_path(const Map& m, Moves moves, Cell start, Cell goal, Cell* out_path, std::size_t capacity);
 
