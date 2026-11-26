@@ -37,6 +37,15 @@ const char* status_text(Status s);
 //   M^2 <= 16 * tol^2 * n^4 (exact integer comparison; M^2 is the exact squared norm), else kMaxSegments.
 // Cubic (p0, c0, c1, p1): M = max(|p0 - 2 c0 + c1|, |c0 - 2 c1 + p1|). The deviation is at most 3 M / (4 n^2). n is the smallest
 //   integer in 1 .. kMaxSegments with 9 * M^2 <= 16 * tol^2 * n^4, else kMaxSegments.
+// Scope of the bounds (binding, from the scope X gate): the deviation bounds above are for the chords through the EXACT samples at
+// t = i / n. Rounding each output point to the nearest integer moves it by at most sqrt(2) / 2 (less than 3/4), so the rounded
+// polyline deviates from the curve by at most tolerance + sqrt(2) / 2 when the bound above holds. The proof belongs in
+// docs/flatten.md; tests that sample exact rational positions (exact samples against tolerance, rounded output against
+// tolerance + 3/4) are evidence, not the proof.
+// Overflow-safe comparison (binding): the literal right side 16 * tol^2 * n^4 can reach 2^68 and must not be formed in int64. With
+// T = tol * n * n (at most 2^32) the tests are equivalent to M <= 4 T (quadratic) and 3 M <= 4 T (cubic) on real numbers; compare
+// squared integers only after a proved threshold on T (above it the answer is true without squaring), no 128-bit type. The
+// contributor proves the thresholds from |M| <= 2^26 * sqrt(2) in docs/flatten.md.
 // When kMaxSegments is returned because the tolerance is not reachable, the deviation bound does not hold; the contributor states
 // this and the largest curve and smallest tolerance for which it does in docs/flatten.md. Invalid input gives 0.
 std::uint32_t quad_segments(Point p0, Point c, Point p1, std::int32_t tolerance);
