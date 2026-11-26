@@ -58,5 +58,8 @@ the wrong stride or offset); the row and column loops; and the writes of `*out_w
 - The source span end computed in 32 bits instead of 64. The term `(out_h * f - 1) * src_stride` is at most `4095 * 65536`, and the
   full end offset below `4095 * 65536 + 4096`, both under 2^32, because sizes and strides are limited before the overlap check is
   reached. The 32-bit value equals the 64-bit value for every call that gets there.
-- Writing `*out_w` and `*out_h` before the filtering loops instead of after. No failure path exists after the overlap check, so a call that
-  reaches the loops always returns Ok and ends with the same two values written. The order cannot be observed.
+- Writing `*out_w` and `*out_h` before the filtering loops instead of after. No failure path exists after the overlap check, so a call
+  that reaches the loops always returns Ok and ends with the same two values written. The order is unobservable only on the condition
+  that `out_w` and `out_h` do not alias `src` or `dst` (their bytes), because the loops read `src` and write `dst`. The header makes no
+  aliasing promise, no check exists and no test covers it; callers pass distinct objects. If an output pointer did alias a source or
+  destination byte, the mutant could change the pixels read or written, and this survivor would no longer be equivalent.
