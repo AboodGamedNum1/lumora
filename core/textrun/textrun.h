@@ -40,6 +40,12 @@ struct Placed {
 //  * digest_placed: a null pointer hashes zero bytes whatever count is.
 //  * U+FFFD and supplementary code points go through ttf::glyph_index like any other code point (supplementary gives glyph 0, Ok).
 
+//  * Overlap has six pairs, not five: out against out_count, out against width_fx, out against the font bytes, out_count against
+//    width_fx, out_count against the font bytes, and width_fx (4 bytes) against the font bytes (a written width must not land in the
+//    font). The first four-byte pair width_fx against out_count is the same pair as out_count against width_fx.
+//  * A hand-built Font with units_per_em 0 is rejected with ttf::Status::BadFont, checked right after the NullBuffer checks and before
+//    BadSize (no substitution of 1, no division by zero). Fonts filled by ttf::parse_font always have 16 .. 16384.
+
 // Shapes the text. For each code point in order: glyph = ttf::glyph_index; advance = ttf::glyph_advance(glyph) in font units;
 // the glyph is placed at x_fx = round(U * size_fx / units_per_em), where U is the sum of the advances of all earlier glyphs in
 // font units (cumulative rounding, nearest, ties away from zero, exact 64-bit integer arithmetic; the per-glyph rounding error
