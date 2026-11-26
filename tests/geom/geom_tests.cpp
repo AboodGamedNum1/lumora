@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <random>
 #include <set>
 #include <string>
 #include <utility>
@@ -506,4 +507,38 @@ TEST_CASE("performance: 4096 vertices", "[geom][perf]") {
   const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
   INFO("took " << secs << " s");
   CHECK(secs < 10.0);
+}
+
+TEST_CASE("triangulate always finds an ear for valid polygons (no fallback pass exists)", "[geom][triangulate][fuzz]") {
+  std::mt19937 rng(5);
+  long valid = 0;
+  for (int it = 0; it < 60000; ++it) {
+    const int n = 3 + static_cast<int>(rng() % 12), g = 2 + static_cast<int>(rng() % 6);
+    std::vector<Pt> p;
+    if (rng() % 2) {  // star-shaped around the origin: repeated directions give collinear vertices
+      for (int i = 0; i < n; ++i) {
+        p.push_back({static_cast<float>(static_cast<int>(rng() % (2 * g + 1)) - g),
+                     static_cast<float>(static_cast<int>(rng() % (2 * g + 1)) - g)});
+      }
+      std::sort(p.begin(), p.end(), [](const Pt& a, const Pt& b) { return std::atan2(a.y, a.x) < std::atan2(b.y, b.x); });
+    } else {
+      for (int i = 0; i < n; ++i) {
+        p.push_back({static_cast<float>(rng() % (2 * g + 1)), static_cast<float>(rng() % (2 * g + 1))});
+      }
+    }
+    if (validate_polygon(p.data(), p.size()) != PolyStatus::Ok) continue;
+    ++valid;
+    std::vector<std::uint32_t> out(3 * p.size());
+    const std::size_t t = triangulate(p.data(), p.size(), out.data());
+    REQUIRE(t >= 1);
+    REQUIRE(t <= p.size() - 2);
+    double sum = 0;
+    for (std::size_t k = 0; k < t; ++k) {
+      const double a2 = signed_area2(std::vector<Pt>{p[out[3 * k]], p[out[3 * k + 1]], p[out[3 * k + 2]]}.data(), 3);
+      REQUIRE(a2 > 0);
+      sum += a2;
+    }
+    REQUIRE(sum == std::fabs(signed_area2(p.data(), p.size())));
+  }
+  REQUIRE(valid > 10000);
 }

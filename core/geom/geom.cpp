@@ -210,19 +210,18 @@ std::size_t triangulate(const Pt* v, std::size_t n, std::uint32_t* out_indices) 
   auto convexity = [&](std::uint32_t i) { return orient(v[prev[i]], v[i], v[next[i]]) * w; };
   for (std::size_t i = 0; i < n; ++i) reflex[i] = convexity(static_cast<std::uint32_t>(i)) <= 0 ? 1 : 0;
 
-  // A remaining vertex blocks the ear (a, b, c) if it lies inside it; `closed` also counts the boundary.
-  auto blocked = [&](std::uint32_t a, std::uint32_t b, std::uint32_t c, bool closed) {
+  // A remaining vertex blocks the ear (a, b, c) if it lies inside it or on its boundary.
+  auto blocked = [&](std::uint32_t a, std::uint32_t b, std::uint32_t c) {
     for (std::uint32_t k = next[c]; k != a; k = next[k]) {
       if (!reflex[k]) continue;  // a strictly convex vertex cannot lie inside an ear of a simple polygon
       const int o1 = orient(v[a], v[b], v[k]) * w, o2 = orient(v[b], v[c], v[k]) * w, o3 = orient(v[c], v[a], v[k]) * w;
-      if (closed ? (o1 >= 0 && o2 >= 0 && o3 >= 0) : (o1 > 0 && o2 > 0 && o3 > 0)) return true;
+      if (o1 >= 0 && o2 >= 0 && o3 >= 0) return true;
     }
     return false;
   };
 
   std::size_t remaining = n, tris = 0;
   std::uint32_t start = 0;
-  bool relaxed = false;
   while (remaining > 3) {
     bool clipped = false;
     std::uint32_t cur = start;
@@ -233,7 +232,7 @@ std::size_t triangulate(const Pt* v, std::size_t n, std::uint32_t* out_indices) 
       if (cv == 0) {
         ear = true;  // zero-area ear: removed without a triangle
       } else {
-        ear = cv > 0 && !blocked(a, cur, c, !relaxed);
+        ear = cv > 0 && !blocked(a, cur, c);
       }
       if (!ear) continue;
       if (cv != 0) {
@@ -251,10 +250,9 @@ std::size_t triangulate(const Pt* v, std::size_t n, std::uint32_t* out_indices) 
       clipped = true;
       break;
     }
-    if (!clipped) {
-      if (relaxed) return 0;  // not reachable for a valid polygon
-      relaxed = true;         // retry counting only strictly inside vertices as blockers
-    }
+    // A valid polygon always has an ear (two ears theorem; validation rejects touching, and all tests are exact),
+    // so this is not reached. It only guards against an endless loop.
+    if (!clipped) return 0;
   }
   const std::uint32_t a = start, b = next[a], c = next[b];
   if (orient(v[a], v[b], v[c]) != 0) {

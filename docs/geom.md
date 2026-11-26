@@ -67,8 +67,10 @@ without a triangle.
 - A vertex with `orient == 0` (collinear) is clipped as a zero-area ear without writing a triangle.
 - A convex vertex is a valid ear when no other remaining vertex lies inside or on the closed triangle. Only reflex or
   collinear vertices can block, so only they are tested.
-- If a full pass finds no ear, a second pass counts only strictly interior vertices as blockers. For valid polygons
-  this was not reached in the tests; if it also fails, the result is 0.
+- There is no fallback pass. Validation rejects touching edges and all tests are exact, so by the two ears theorem
+  a valid polygon always has an ear (a vertex lying exactly on a candidate diagonal blocks it, which is why the
+  inside test is closed). If a pass finds no ear the function returns 0 as a loop guard; this was never reached in a
+  seeded fuzz test of valid polygons with collinear vertices (the test "triangulate always finds an ear" repeats it with 60000 seeded draws).
 - The last three vertices write one triangle unless they are collinear.
 
 Triangle areas add up exactly to the polygon area when the coordinates are integers.
