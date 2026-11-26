@@ -85,6 +85,28 @@ Status glyph_index(const Font& font, std::uint32_t code_point, std::uint32_t* gl
 // entry's advance.
 Status glyph_advance(const Font& font, std::uint32_t glyph, std::uint32_t* advance_out);
 
+// Decisions on the open reading questions (binding, they refine the rules above and above all fix the order of checks):
+//  * parse_font: all seven presence checks (MissingTable, in the order head, maxp, loca, glyf, cmap, hhea, hmtx) run first; the content
+//    checks then run in the order head, maxp, loca, hhea together with the hmtx length, cmap. glyf has no content check.
+//  * glyph_index and glyph_advance: NullBuffer when font.data or the output pointer is null, checked first; there is no Overlap check
+//    for them; then the rules above. Nothing is written on an error.
+//  * glyph_outline Overlap: three pairs are checked: out against out_count, out against the font bytes (font.data .. +size), and
+//    out_count (4 bytes) against the font bytes. The extent of out is always kMaxGlyphCommands * sizeof(Command), whatever
+//    out_capacity is (it is at least kMaxGlyphCommands once BufferTooSmall passed).
+//  * loca per glyph: only the entries g and g + 1 are read; loca[g] <= loca[g + 1] <= glyf_len (in bytes, after doubling for the short
+//    format) else BadGlyph, also for an empty range. A non-empty range shorter than the 10 byte header is BadGlyph.
+//  * Composite order of errors: for each component in turn: read flags, glyph and the two arguments (BadGlyph when they do not fit);
+//    check the flags (Unsupported); look up the component glyph (BadGlyph when >= numGlyphs or its data is bad, Unsupported when it
+//    is a composite); read its point count from its endPtsOfContours; add it to the total and fail TooComplex at once when the total
+//    exceeds kMaxGlyphPoints, before reading that component's flags and coordinates. Only after a component is fully processed does
+//    its 0x0020 flag matter: when it is the kMaxComponents-th component, 0x0020 gives TooComplex without reading a 17th.
+//  * Flag 0x0100 counts on the last component only (the one without 0x0020); on earlier components it is ignored. The instruction
+//    length (u16) and the instructions must fit in the glyph data, else BadGlyph.
+//  * Contour walk: first point on-curve: start there and walk points 1 .. n - 1. Else last point on-curve: start there and walk points
+//    0 .. n - 2. Else start at the exact midpoint (doubled units) of the first and last point and walk points 0 .. n - 1.
+//  * Coordinates accumulate as signed 32-bit values in doubled font units, with no 16-bit wraparound (the sums of at most 340 points
+//    of 16-bit deltas, plus component offsets, fit); offsets are signed 16-bit words or signed bytes.
+
 // Glyph outline as commands. Scaling: a coordinate d in DOUBLED font units (2 * the font unit value, so the implied midpoints
 // below stay exact) becomes fx = round(d * size_fx / (2 * units_per_em)), nearest, ties away from zero, with exact 64-bit
 // integer arithmetic. x_fx = origin_x + fx(d_x) and y_fx = origin_y - fx(d_y) (font y grows up, raster y grows down). Every
