@@ -32,7 +32,7 @@ struct GlyphCache {
 enum class InsertResult : std::uint8_t { Inserted = 0, Updated = 1, Evicted = 2, NullCache = 3, BadKey = 4 };
 
 // Quarter-pixel bin of a pen position in 24.8 fixed point (the unit core/textrun produces): (pen_x & 255) >> 6 on the two's complement
-// value, so 0..3 and negative positions floor toward minus infinity (pen -1 is bin 3).
+// value, so 0..3 and negative positions floor toward minus infinity (pen -1 is bin 3, INT32_MIN is bin 0): bits 6 and 7 of the value as a uint32.
 std::uint8_t subpixel_bin(std::int32_t pen_x_24_8);
 
 // Keys are equal when all four fields are equal. A key is valid when subpixel <= 3 and size_px >= 1.
@@ -50,6 +50,18 @@ bool cache_find(GlyphCache* cache, const GlyphKey& key, std::uint32_t* value);
 // result Inserted. Else the entry with the smallest last_used (lowest index on a tie) is replaced, evictions += 1, result Evicted.
 // For Inserted and Evicted too: tick += 1 (saturating) and the new entry gets last_used = tick.
 InsertResult cache_insert(GlyphCache* cache, const GlyphKey& key, std::uint32_t value);
+
+// Decisions for hand-built (inconsistent) objects. The used flags are the truth for lookups: cache_find, the present-key check of
+// cache_insert and cache_digest look only at used entries. cache_insert never recounts: it trusts count only for the choice between a
+// free slot and eviction. If count < kCapacity but no unused slot exists, it evicts. If count >= kCapacity it evicts even when unused
+// slots exist (an unused slot is never preferred then). Eviction candidates are used entries only (smallest last_used, lowest index on
+// a tie); if there is no used entry at all, slot 0 is replaced. Both cases return Evicted with evictions += 1 and leave count as it is.
+// An Inserted result adds 1 to count, never beyond kCapacity. Exact bookkeeping: a find hit changes tick (+1), that entry's last_used,
+// and hits; a find miss changes only misses (tick is untouched); insert never changes hits or misses; Updated changes tick and that
+// entry's last_used only; Inserted changes tick, count and the new entry; Evicted changes tick, evictions and the replaced entry.
+// A saturated tick stays at UINT64_MAX and is stored as last_used, so equal last_used values are resolved by the lowest index.
+// cache_size returns the stored count as is (not recounted, not clamped). cache_digest never hashes count or tick.
+// cache_clear sets every entry to its default state: zero key, value and last_used, used false.
 
 // Number of used entries; 0 for a null cache.
 std::uint32_t cache_size(const GlyphCache* cache);
