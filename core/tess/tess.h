@@ -30,9 +30,11 @@ enum class Status : std::uint8_t {
 // "unknown" otherwise.
 const char* status_text(Status s);
 
-// Twice the signed area (shoelace formula, exact in int64; counter-clockwise is positive). Checks: NullBuffer, BadCount,
-// BadPoint. The vertex ring is closed implicitly (the last vertex connects to the first). Writes *area2 only on Ok. Magnitude
-// bound to document: |area2| <= 2^60 for coordinates within 2^28.
+// Twice the signed area (shoelace formula; counter-clockwise is positive). The sign and zero test must be exact for every input
+// that passes the checks, also self-intersecting ones whose int64 sum could overflow (use a two-word accumulator). *out_area2 is
+// the exact value when it fits in int64, otherwise it saturates to INT64_MAX or INT64_MIN (status stays Ok). Checks: NullBuffer, BadCount,
+// BadPoint. The vertex ring is closed implicitly (the last vertex connects to the first). Writes *area2 only on Ok. For a simple polygon within 2^28 the magnitude bound is
+// |area2| <= 2^59 (document the bound used).
 Status area2(const Point* pts, std::uint32_t count, std::int64_t* out_area2);
 
 // Simple polygon test, exact integers, O(n^2) is fine for 4096 vertices. Writes *simple (true or false) and returns Ok for a
@@ -48,8 +50,8 @@ Status is_simple(const Point* pts, std::uint32_t count, bool* simple);
 enum class Location : std::uint8_t { Outside = 0, Inside = 1, Boundary = 2 };
 Status locate(const Point* pts, std::uint32_t count, std::int32_t px, std::int32_t py, Location* where);
 
-// Caller scratch for triangulate: scratch_size(count) uint32 values (the contributor chooses the layout, for example a previous
-// and a next index per vertex; the function returns the exact number the implementation needs). Returns 0 for an invalid count.
+// Caller scratch for triangulate: scratch_size(count) uint32 values. Fixed: 3 * count (the contributor chooses the layout, for
+// example previous, next and one spare per vertex). Returns 0 for an invalid count (< 3 or > kMaxVertices).
 std::uint32_t scratch_size(std::uint32_t count);
 
 // Ear clipping triangulation of a simple polygon of either winding. Output triangles are written as index triples into pts
@@ -59,20 +61,25 @@ std::uint32_t scratch_size(std::uint32_t count);
 // (see the rule). Deterministic rule, fixed here:
 //  - Work on the ring of remaining vertices in the polygon's own order; if the winding is clockwise treat the ring as
 //    reversed only for orientation tests (indices written keep the triangle counter-clockwise, so swap two indices).
-//  - Loop: scan the remaining ring starting at the lowest remaining vertex index and going around the ring in ring order (not by
-//    index). The first vertex v (previous a, next b) that is an ear is clipped: emit (a, v, b) counter-clockwise, remove v.
-//    Then restart the scan from the lowest remaining vertex index again.
+//  - A pass starts at the lowest remaining vertex index and visits each vertex of the ring (as it was when the pass started) once, in
+//    ring order (not by index), with no restart inside the pass except after an ear clip. The first vertex v (previous a, next b) that is an ear is clipped: remove v and emit the triple (a, v, b) when the polygon is
+//    counter-clockwise, or (b, v, a) when it is clockwise (so every emitted triangle is counter-clockwise). After an ear clip a new
+//    pass starts at the lowest remaining vertex index.
 //  - Vertex v is an ear when the corner (a, v, b) turns strictly in the interior direction (strictly convex) and no other
 //    remaining vertex lies inside the closed triangle (a, v, b) except vertices that coincide with a or b (none do in a simple
 //    polygon, so: no other remaining vertex at all inside or on the triangle).
-//  - Collinear vertices (turn exactly zero) are dropped without emitting a triangle, as soon as they are met by the scan and
-//    before ear tests of the same step; a vertex that was dropped never appears in a triangle.
-//  - If a full pass finds neither a collinear vertex nor an ear (can only happen through boundary touching of remaining
+//  - Collinear vertices (turn exactly zero) are dropped without emitting a triangle, when the scan meets them, and the scan
+//    then continues at the dropped vertex's successor (no restart after a drop); a dropped vertex never appears in a triangle.
+//    A pass that ends with drops but no ear starts a new pass at the lowest remaining index.
+//  - Only if a full pass found neither a drop nor an ear (can only happen through boundary touching of remaining
 //    vertices), clip the first strictly convex vertex whose triangle has no remaining vertex strictly inside (boundary allowed).
 //    The contributor must prove in docs/tess.md that the loop terminates and that a strictly convex vertex always exists.
-// Checks in enum order: NullBuffer (pts, out, scratch, tri_count), BadCount, BadPoint, BufferTooSmall, Overlap (pts against
-// scratch against out, touched ranges), BadPolygon (is_simple first, then anything else the loop detects). Nothing is written on
-// error. Costs: O(n^2) per ear search is acceptable, O(n^3) worst case for 4096 vertices is NOT: keep the amortised cost near
+// Checks in enum order: NullBuffer (pts, out, scratch, tri_count), BadCount, BadPoint, BufferTooSmall, Overlap (every pair of: pts,
+// the scratch_size(count) scratch words, the out extent 3 * min(out_capacity, count - 2) words, and the 4-byte *tri_count; touched
+// ranges, modular address rule as in core/composite), BadPolygon (is_simple first). Nothing is written on error. The one
+// exception: an internal "no ear found" return after output was started is unreachable for a simple polygon; docs/tess.md must
+// prove that (two ears theorem with this exact rule, collinear drops and the fallback included), the code keeps a defensive
+// BadPolygon return there, and the tests must show it is never taken. Costs: O(n^2) per ear search is acceptable, O(n^3) worst case for 4096 vertices is NOT: keep the amortised cost near
 // O(n^2) and document it.
 Status triangulate(const Point* pts, std::uint32_t count, std::uint32_t* out, std::uint32_t out_capacity, std::uint32_t* scratch,
                    std::uint32_t scratch_count, std::uint32_t* tri_count);
