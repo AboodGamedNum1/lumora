@@ -35,4 +35,11 @@ std::int64_t zigzag_decode(std::uint64_t u);
 bool encode_signed(std::int64_t v, std::uint8_t* out, std::uint32_t capacity, std::uint32_t* written);
 bool decode_signed(const std::uint8_t* in, std::uint32_t length, std::int64_t* value, std::uint32_t* consumed);
 
+// Decisions: decode reads at most kMaxBytes bytes and never more than length. Ten bytes that all have the continuation bit set (even when
+// length is exactly 10) are an ordinary false, as is any 10th byte above 1; a 10th byte of exactly 1 is accepted as bit 63. A zero payload
+// byte in the middle of an encoding is canonical; only a zero FINAL byte of a multi-byte encoding is padding. Boundaries: 0 and 127 take
+// 1 byte, 128 takes 2, values with bit 63 set take 10. decode_signed decodes into temporaries and publishes *value and *consumed only after
+// full success. No promise is made, and nothing is checked or tested, about overlap between the buffers and the value, consumed and
+// written pointers: callers pass distinct objects. A new ambiguity is a question to the maintainer, not an interpretation.
+
 }  // namespace lumora::varint
