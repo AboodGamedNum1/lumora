@@ -10,6 +10,12 @@ constexpr Q16 kOne = 65536;
 constexpr Q16 kMax = INT32_MAX;
 constexpr Q16 kMin = INT32_MIN;
 
+// Decisions: mul and div compute the exact result, round it, then saturate (a rounded 2^31 becomes kMax; div(kMin, -1) is kMax). For mul
+// the rounding is magnitude plus 32768 divided by 65536, then the sign is applied. lerp rounds only the product term (b - a) * t / 65536,
+// adds a in 64 bits, then saturates; the final sum is not rounded again, and lerp(a, b, 0) is a and lerp(a, b, kOne) is b exactly (when
+// in range). to_int_floor(kMin) is -32768 and to_int_floor(kMax) is 32767; from_int is exact for -32768 to 32767 and saturates outside.
+// isqrt_u64(UINT64_MAX) is 4294967295. A header ambiguity found later is a question to the maintainer, not an interpretation.
+
 // Rounding rule used below: "round half away from zero" means the exact quotient is rounded to the nearest integer and an exact half goes
 // to the larger magnitude. "Saturate" means clamp to [kMin, kMax].
 
