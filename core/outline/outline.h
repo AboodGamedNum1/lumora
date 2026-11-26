@@ -63,6 +63,7 @@ std::uint32_t point_bound(std::uint32_t command_count);
 // points in command order), BadPath (first violation in command order), BufferTooSmall (pts_capacity < point_bound,
 // ends_capacity < contour_bound, closed_capacity < contour_bound), Overlap (all 15 pairs of the six extents: commands (command_count * sizeof(Command) bytes),
 // pts (point_bound points), contour_ends (contour_bound words), closed (contour_bound bytes), *contour_count and *point_count_out).
+// On success, pts entries at or beyond the reported point count are unspecified (dropped contours may leave temporary points there).
 // Nothing is written on error; the checks are data independent except that BadPath depends on the sequence of ops only.
 Status build_outline(const Command* commands, std::uint32_t command_count, std::int32_t tolerance, Point* pts,
                      std::uint32_t pts_capacity, std::uint32_t* contour_ends, std::uint32_t ends_capacity, std::uint8_t* closed,
