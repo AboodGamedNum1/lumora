@@ -31,7 +31,7 @@ enum class Status : std::uint8_t {
   BadFill,           // fill rule outside raster::Fill
   BadStyle,          // stroke style out of range (half_width, miter_limit, join, cap; the closed field is ignored and replaced per contour)
   BadCommand,        // an op outside Move .. Close
-  BadPoint,          // a used coordinate beyond raster::kMaxCoord in magnitude
+  BadPoint,          // a used input coordinate beyond raster::kMaxCoord, or (stroke, data dependent) a generated stroke vertex beyond it
   BadPath,           // the outline sequence rule is broken
   WorkTooSmall,      // work_bytes is below work_bytes_needed(command_count, stroke), or work is misaligned (not a multiple of 8)
   Overlap,           // touched byte ranges intersect (modular address rule as in core/composite)
@@ -57,6 +57,22 @@ std::size_t work_bytes_needed(std::uint32_t command_count, bool stroke);
 Status fill_path(const outline::Command* commands, std::uint32_t command_count, std::int32_t tolerance, raster::Fill rule,
                  const raster::Target& target, void* work, std::size_t work_bytes);
 
+// Binding rules from the scope Z gate:
+//  A. Valid inputs near the coordinate limit can generate stroke vertices beyond +/-raster::kMaxCoord (offsets up to 2^20, miter tips
+//     up to 2^25), which raster rejects. stroke_path therefore checks every generated vertex before the rasteriser runs and
+//     returns BadPoint with the target untouched. No clamping. So the sub-module calls cannot fail after the checks, but the stroke
+//     outline itself can be rejected with BadPoint, TooManyPoints or TooManyContours.
+//  B. Order inside stroke_path after the common checks: first all flattened contours are checked for more than stroke::kMaxPoints
+//     points (TooManyPoints, before any stroking); then contours are stroked in order, and for each contour the first violation wins:
+//     a generated vertex out of range (BadPoint), or the running total of stroke contours above raster::kMaxContours
+//     (TooManyContours). Nothing is written to the target before all of this has passed.
+//  C. Work memory is data independent: work_bytes_needed covers every worst case of the stages (outline points, ends and flags;
+//     the per-contour stroke input and output buffers; the raster point copies and the contour descriptors) and does not depend on
+//     the data. A runtime reject (for example more than 4096 contours) is not used to shrink it, except that every stroke contour
+//     is a triangle or a quad (at most 4 points), so at most 4 * raster::kMaxContours points are ever kept for the rasteriser. The
+//     contributor states the sections (each 8-byte aligned) and the exact formula in docs/vecdraw.md.
+//  D. Fill with no qualifying contour (all under 3 points) still calls the rasteriser with zero contours, which clears the target.
+//     The outline closed flag overrides style.closed (also for a closed two-point contour).
 // Strokes the path: every contour (open or closed as the outline says) is stroked with the style (the style.closed field is ignored,
 // the contour decides), all stroke contours are filled with raster::Fill::NonZero. Contours are processed in order. A contour of
 // 2 or more points but whose stroke call reports a status other than Ok cannot happen after the checks (the contributor proves it
