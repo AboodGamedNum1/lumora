@@ -21,7 +21,10 @@ enum class Capability : std::uint8_t {
 };
 
 // Names as written in the manifest "uses" list: "microphone", "notifications", "activity_recognition",
-// "coarse_location". Exact lowercase match only.
+// "coarse_location". Exact lowercase full-byte match only: wrong case, whitespace, an empty name and embedded NUL
+// bytes are unknown (no C-string truncation). capability_name returns an empty string for Count_ or invalid values.
+// capability_from_name leaves *out untouched when it returns false; a null out is tolerated and the result still
+// says whether the name matches. Never shift by 32 or more: guard the value before computing a bit.
 const char* capability_name(Capability c);
 bool capability_from_name(std::string_view name, Capability* out);
 
@@ -43,7 +46,9 @@ struct DeclareResult {
 
 // Parses the manifest "uses" names. Check order per name in input order: TooManyNames is checked first
 // (count above max_names, index max_names), then per name UnknownCapability, then DuplicateCapability.
-// An empty list is Ok with an empty set.
+// An empty list is Ok with an empty set. max_names 0 allows only the empty list; there is no implicit four-name
+// limit above that (unknown and duplicate decide); SIZE_MAX works. On any failure declared is 0. Unknown index is
+// that name; Duplicate index is the second occurrence; TooManyNames wins even if an earlier name is unknown.
 DeclareResult parse_declared(const std::vector<std::string>& names, std::size_t max_names = 32);
 
 enum class CapabilityStatus {
@@ -69,20 +74,27 @@ struct GrantRecord {
 
 // Grant and revoke. Granting a capability that is not declared returns false and changes nothing. Revoking
 // a capability that is not granted is allowed and changes nothing (returns true). Revocation takes effect for the
-// next status query, including while the scene runs.
+// next status query, including while the scene runs (no callbacks or events). An invalid capability: grant
+// returns false, revoke returns true, both unchanged. Null record pointer: both return false. Repeated grant
+// succeeds unchanged. Each touches only its own bit and does not repair stray granted bits.
 bool grant(GrantRecord* r, Capability c);
 bool revoke(GrantRecord* r, Capability c);
 
 // Scene update: returns the record for the new package. If the new declared set is a subset of the old one, the
 // grants that are still declared are kept. If it declares anything the old one did not, every grant is reset
 // (the user is asked again for all of them). A record with granted bits outside declared is repaired by
-// clearing those bits first.
+// clearing those bits first. Inputs are masked to the four valid bits first (old declared, old granted, new
+// declared), so high bits never trigger a reset and never appear in the output. Equal sets count as subset; an empty
+// new set clears everything; an empty old set with a nonempty new set resets grants. Output declared is the masked
+// new declared set; output granted is repaired old grants intersected with the new declared set (or 0 on reset).
 GrantRecord reconcile_update(const GrantRecord& old_record, CapabilitySet new_declared);
 
 // The answer a scene call gets. Order: NotDeclared, PermissionDenied, Unsupported, TemporarilyUnavailable,
-// Available. Capability::Count_ and values above it are NotDeclared.
+// Available. Capability::Count_ and values above it are NotDeclared. The record is read without mutation; a
+// granted bit outside declared is NotDeclared; active without supported is Unsupported.
 CapabilityStatus query(const GrantRecord& r, Capability c, const PlatformState& platform);
 
+// to_string uses the identifier spelling; unknown enum values return "Unknown".
 const char* to_string(DeclareVerdict v);
 const char* to_string(CapabilityStatus s);
 
