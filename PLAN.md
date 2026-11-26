@@ -123,7 +123,8 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | 2D sprite batcher (core/batch, M4 groundwork) | merged (02e0990), CI-verified on Linux and Windows with identical golden digests; software evidence only |
 | 2D spatial grid broadphase (core/grid, groundwork) | merged (dd105a5), CI-verified on Linux and Windows with identical golden digests; software evidence only |
 | Grid pathfinding (core/pathfind, groundwork) | merged (f3144ff), CI-verified on Linux and Windows with identical golden digests; software evidence only |
-| Bitmap text layout (core/textlayout, M4 text groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
+| Bitmap text layout (core/textlayout, M4 text groundwork) | merged (ea02ca1), CI-verified on Linux and Windows with golden digests asserted as constants; exact 64-bit layout decisions, saturating stores, 2^30 byte input cut (the cut itself is verified by a one-off local run, not in CI); software evidence only |
+| CPU polygon rasterizer (core/raster, M4 groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
