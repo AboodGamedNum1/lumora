@@ -333,8 +333,7 @@ bool visible_world_bounds(const Camera& cam, Rect& out) {
 Rect transform_rect(const Affine& m, const Rect& r) {
   const bool ok = all_finite(m) && is_finite(r.min_x) && is_finite(r.min_y) && is_finite(r.max_x) && is_finite(r.max_y);
   if (!ok) {
-    const float zero = 0.0f;
-    const float q = zero / zero;  // NaN without a library call
+    const float q = float_of(0x7fc00000u);  // quiet NaN from its bit pattern
     return Rect{q, q, q, q};
   }
   const float xs[4] = {r.min_x, r.max_x, r.min_x, r.max_x}, ys[4] = {r.min_y, r.min_y, r.max_y, r.max_y};
