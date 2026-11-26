@@ -38,6 +38,11 @@ bool valid(const StepConfig& c);
 //     (saturating). The remainder below one step is always kept.
 //  6. alpha_q16 = floor(accumulator * 65536 / step_ns), exact for every step_ns up to UINT64_MAX; compute it
 //     without 128-bit types (for example 16 shift-and-subtract rounds on the remainder). Always below 65536.
+// Notes: time lost to the saturation in rule 2 is not counted in dropped_ns (only the clamp excess of rule 1 and the
+// catch-up discard of rule 5 are). Rule 5 compares wanted and max_steps as 64-bit values; equality drops nothing.
+// When both caps trigger, the rule 1 excess is added to dropped_ns first and the rule 5 discard second, each
+// saturating. A null state, null out or invalid config returns false and leaves state and out untouched.
+// The alpha division compares the remainder against step_ns minus the remainder to avoid overflow.
 // state->accumulator_ns is below step_ns afterwards, even if the caller passed a larger value in.
 bool advance(StepState* state, std::uint64_t delta_ns, const StepConfig& config, StepResult* out);
 
