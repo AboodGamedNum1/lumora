@@ -12,7 +12,7 @@ namespace lumora::spatial {
 
 constexpr std::uint32_t kMaxItems = 1u << 20;
 constexpr std::uint32_t kMaxLeaf = 16;
-constexpr std::int32_t kMaxCoord = 1 << 28;  // |coordinate| <= kMaxCoord for every box and query value
+constexpr std::int32_t kMaxCoord = 1 << 28;  // |coordinate| <= kMaxCoord for every item box given to build; query boxes and points may use any int32 value
 
 // Closed box: contains every point with x0 <= x <= x1 and y0 <= y <= y1. A box with x0 > x1 or y0 > y1 is invalid.
 struct Box {
@@ -25,7 +25,7 @@ enum class Status : std::uint8_t {
   BadCount,         // item_count > kMaxItems, or leaf_size is 0 or > kMaxLeaf
   BadBox,           // a box is invalid or has a coordinate beyond kMaxCoord in magnitude
   BufferTooSmall,   // node_capacity < node_bound(item_count, leaf_size) (the bound is exact), or a query output buffer is too small
-  BadIndex          // the index passed to a query was not produced by build for these items (checked cheaply, see docs)
+  BadIndex          // the index passed to a query was not produced by build for these items (cheap checks up front, lazy checks during traversal, see docs)
 };
 // Lower-case spaced enum names ("ok", "null buffer", "bad count", "bad box", "buffer too small", "bad index"), "unknown" otherwise.
 const char* status_text(Status s);
@@ -49,13 +49,14 @@ std::uint32_t node_bound(std::uint32_t item_count, std::uint32_t leaf_size);
 //    (left gets count / 2 items, the right gets the rest).
 //  - Nodes are numbered in depth first order, parent before children, left subtree before right.
 // Checks in enum order: NullBuffer, BadCount, BadBox (items in index order), BufferTooSmall. Nothing is written on error.
-// `items` must stay unchanged and alive for the queries. Writes node_count (may be null only if the caller does not need it).
+// `items` must stay unchanged and alive for the queries. Writes node_count; node_count may be null only when item_count is 0. All other pointers are required even when counts are 0, except the unused arrays of an empty build.
 Status build(const Box* items, std::uint32_t item_count, std::uint32_t leaf_size, Node* nodes, std::uint32_t node_capacity,
              std::uint32_t* order, std::uint32_t* node_count);
 
 // Items whose box intersects the closed query box q (touching counts). Writes their indices in ASCENDING index order to out
 // (capacity out_capacity) and the total number of matches to *found, even when out is too small (then BufferTooSmall and out
-// holds the first out_capacity matches in ascending order). Checks: NullBuffer, BadBox (q invalid), BadIndex, BufferTooSmall.
+// holds the first out_capacity matches in ascending order). Checks: NullBuffer (result pointers out and found are always required, also for empty queries), BadBox (q has x0 > x1 or y0 > y1 only; coordinates need not be within kMaxCoord), BadIndex, then BufferTooSmall after traversal.
+// When out is too small, out must hold the LOWEST out_capacity matching indices in ascending order: use a bounded max-heap in out (insert while not full, else replace the root when the new index is smaller, sift down), then an in-place heapsort at the end, so the cost is O(M log C) for M matches and capacity C; shifting insertion is not allowed. When all matches fit, collect in traversal order and heapsort in place. On BadIndex, *found is 0 and out is unspecified (the check can fail lazily during traversal, after partial output). Use a fixed-size traversal stack; a depth beyond its size means BadIndex.
 Status query_box(const Box* items, std::uint32_t item_count, const Node* nodes, std::uint32_t node_count, const std::uint32_t* order,
                  const Box& q, std::uint32_t* out, std::uint32_t out_capacity, std::uint32_t* found);
 
