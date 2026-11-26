@@ -34,4 +34,11 @@ bool contains_point(const Rect& r, std::int32_t px, std::int32_t py);
 // w * h as uint64; 0 for an empty rectangle.
 std::uint64_t area(const Rect& r);
 
+// Decisions: bounds_union checks out for null first and leaves *out unchanged on every false return, even when an input is empty. For two
+// non-empty inputs the bounding width and height are computed in 64 bits and rejected only when above INT32_MAX (equal is accepted), so far
+// apart valid rectangles can fail although each edge fits in int32. out may alias a or b: all fields are computed first and *out is
+// assigned once at the end (tests cover both aliases). Right and bottom edges exactly INT32_MAX are valid, above are invalid; zero width
+// or height is valid but empty; a negative width or height is invalid; negative coordinates are allowed. contains_point compares in 64 bits
+// against the half-open edges. A header ambiguity found later is a question to the maintainer, not an interpretation.
+
 }  // namespace lumora::rect
