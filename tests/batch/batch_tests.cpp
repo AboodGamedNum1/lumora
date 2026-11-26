@@ -304,7 +304,8 @@ TEST_CASE("culling: closed rectangles, touching, outside, rotated", "[batch][cul
   REQUIRE(count(Rect{0, up(1.0f), 1, 2}) == 0);
   REQUIRE(count(Rect{-2, 0, -from_bits(0x00000001u), 1}) == 0);  // smallest gap on the left
   REQUIRE(count(Rect{5, 5, 6, 6}) == 0);
-  const Out o = run(s, &(const Rect&)Rect{5, 5, 6, 6});
+  const Rect far_away = {5, 5, 6, 6};
+  const Out o = run(s, &far_away);
   REQUIRE(o.r.status == BatchStatus::Ok);
   REQUIRE(o.r.sprites_culled == 1);
   REQUIRE(o.r.vertex_count == 0);
