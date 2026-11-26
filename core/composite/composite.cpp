@@ -65,11 +65,23 @@ bool size_ok(u32 w, u32 h) { return w != 0 && h != 0 && w <= kMaxSize && h <= kM
 
 // Do the byte ranges of any touched row of A intersect the byte range of any touched row of B? Row i of A covers
 // [a + i * a_stride, +a_len), row j of B covers [b + j * b_stride, +b_len), for i, j in [0, rows). Addresses are only
-// compared as integers here, for this status. They never influence any output byte. Addresses of user space fit 63 bits.
+// compared as integers here, for this status. They never influence any output byte.
+//
+// Overflow argument. A touched region spans at most 8192 rows * (2^32 - 1) bytes + 2^15 < 2^46 bytes from its base, so two
+// regions whose bases are 2^47 or more apart cannot intersect and the answer is false at once. Addresses are taken as
+// uint64 (zero extended on 32-bit targets) with the top byte cleared (tagged pointers such as Android MTE or TBI keep the tag
+// in bits 56..63 and user-space addresses never use them), the difference is computed modulo 2^64 and its absolute value is
+// formed without negating the signed minimum. After the cutoff |delta| < 2^47, i * a_stride < 2^45, so every later sum and
+// product stays below 2^50, far below 2^63.
 bool rows_overlap(const void* a, u64 a_stride, u64 a_len, const void* b, u64 b_stride, u64 b_len, u64 rows) {
-  const i64 pa = static_cast<i64>(reinterpret_cast<std::uintptr_t>(a));
-  const i64 pb = static_cast<i64>(reinterpret_cast<std::uintptr_t>(b));
-  const i64 delta = pa - pb;  // A relative to B
+  const u64 kTagMask = 0x00FFFFFFFFFFFFFFull;
+  const u64 ua = static_cast<u64>(reinterpret_cast<std::uintptr_t>(a)) & kTagMask;
+  const u64 ub = static_cast<u64>(reinterpret_cast<std::uintptr_t>(b)) & kTagMask;
+  const u64 diff = ua - ub;  // modulo 2^64
+  const bool negative = diff >= (static_cast<u64>(1) << 63);
+  const u64 absd = negative ? (static_cast<u64>(0) - diff) : diff;  // |delta| as unsigned, no signed negation
+  if (absd >= (static_cast<u64>(1) << 47)) return false;
+  const i64 delta = negative ? -static_cast<i64>(absd) : static_cast<i64>(absd);  // A relative to B
   const i64 bs = static_cast<i64>(b_stride);
   for (u64 i = 0; i < rows; ++i) {
     const i64 t = delta + static_cast<i64>(i) * static_cast<i64>(a_stride);  // start of A row i relative to B base

@@ -101,8 +101,16 @@ of the touched dst bytes is `[dst0 + i * dst_stride, +w * 4)`. Row `j` of the to
 `[src0 + j * src_stride, +w * 4)` (for a mask `+w`). `Overlap` is returned when any touched dst row range intersects any
 touched source row range. Regions that sit side by side in one buffer, including rows that interleave in memory, are valid.
 A placement that is clipped away completely touches nothing and is `Ok`, even when the buffers alias. Addresses are only
-compared as integers for this status and never affect an output byte; addresses are assumed to fit 63 bits. The check is
-exact and takes O(rows) time.
+compared as integers for this status and never affect an output byte. The check is exact and takes O(rows) time.
+
+Overflow argument. A touched region spans less than `2^46` bytes from its base (at most 8192 rows of a stride below `2^32`, plus
+the row length), so two regions whose base addresses are `2^47` or more apart cannot intersect and the answer is `false`
+before any further arithmetic. Addresses are taken as `uint64` (zero extended on 32-bit targets, where the cutoff never
+triggers), with the top byte cleared: tagged pointers (Android MTE or top-byte-ignore) keep the tag in bits 56 to 63, and
+user-space addresses never use those bits, so two pointers into one buffer compare by their address only. The difference is
+computed modulo `2^64` and its absolute value is formed in unsigned arithmetic, so there is no signed negation of the minimum
+value. After the cutoff the offset is below `2^47` in magnitude, `i * stride` is below `2^45`, and every later sum or product
+stays below `2^50`.
 
 ## Box blur
 
@@ -133,7 +141,7 @@ All intermediate values fit `uint32` (the code uses 64 bits only in `div255` and
 - Clipping works in `int64`: `dx + width` stays within `2^31 + 2^13`.
 - Blur window sum: `(2 * 255 + 1) * 255 = 130305`, and the sliding update `sum + add - sub` never goes negative or above
   that value plus 255.
-- Overlap address arithmetic: strides are below `2^32` and there are at most 8192 rows, so offsets stay below `2^46` in `int64`.
+- Overlap address arithmetic: see the overflow argument in the Overlap section; every signed value is below `2^50` in magnitude.
 
 ## Golden digests
 

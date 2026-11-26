@@ -1033,6 +1033,35 @@ TEST_CASE("overlap is decided on the touched byte ranges", "[composite]") {
   CHECK(fill_mask(Surface{buf.data(), 4, 4, 32}, Mask{buf.data() + 4, 4, 4, 32}, 0, 0, std::vector<std::uint8_t>{1, 1, 1, 1}.data(), BlendMode::Plus) == Status::Overlap);
 }
 
+TEST_CASE("overlap with distant and interleaved regions in one large buffer", "[composite]") {
+  // A 2048 x 2048 pixel buffer (stride 8192 bytes, 32 MiB) on the heap.
+  Bytes big(static_cast<std::size_t>(8192) * 2048, 0x22);
+  std::uint8_t* base = big.data();
+  const std::uint32_t stride = 8192;
+  // Far apart: dst in the first rows, src 1500 rows (12 MB) further down. Not intersecting.
+  CHECK(blend(Surface{base, 64, 64, stride}, ConstSurface{base + 1500u * stride, 64, 64, stride}, 0, 0, BlendMode::Src, 255) == Status::Ok);
+  // Far apart in the other direction.
+  CHECK(blend(Surface{base + 1500u * stride, 64, 64, stride}, ConstSurface{base, 64, 64, stride}, 0, 0, BlendMode::Src, 255) == Status::Ok);
+  // Large regions, adjacent vertically: dst rows 0..1023, src rows 1024..2047.
+  CHECK(blend(Surface{base, 1024, 1024, stride}, ConstSurface{base + 1024u * stride, 1024, 1024, stride}, 0, 0, BlendMode::Src, 255) == Status::Ok);
+  // One row shared: src starts at row 1023.
+  CHECK(blend(Surface{base, 1024, 1024, stride}, ConstSurface{base + 1023u * stride, 1024, 1024, stride}, 0, 0, BlendMode::Src, 255) == Status::Overlap);
+  // The shared row is clipped away by dy = 1 (src row 0 lands on dst row 1; the touched src rows start at memory row 1023, the
+  // touched dst rows 1..1023 end at row 1023, so row 1023 is still shared): overlap.
+  CHECK(blend(Surface{base, 1024, 1024, stride}, ConstSurface{base + 1023u * stride, 1024, 1024, stride}, 0, 1, BlendMode::Src, 255) == Status::Overlap);
+  // dy = -1 drops src row 0 (memory row 1023): the touched src rows are memory rows 1024.. and dst rows 0..1022 touch rows 0..1022.
+  CHECK(blend(Surface{base, 1024, 1024, stride}, ConstSurface{base + 1023u * stride, 1024, 1024, stride}, 0, -1, BlendMode::Src, 255) == Status::Ok);
+  // Interleaved rows that never intersect: dst columns 0..255 of every row, src columns 256..511 of every row.
+  CHECK(blend(Surface{base, 256, 2048, stride}, ConstSurface{base + 1024, 256, 2048, stride}, 0, 0, BlendMode::Src, 255) == Status::Ok);
+  // Interleaved with a one-pixel shared column.
+  CHECK(blend(Surface{base, 256, 2048, stride}, ConstSurface{base + 1020, 256, 2048, stride}, 0, 0, BlendMode::Src, 255) == Status::Overlap);
+  // Different strides: src rows are twice as far apart and start inside the dst row 0 range.
+  CHECK(blend(Surface{base, 64, 64, stride}, ConstSurface{base + 128, 64, 64, stride * 2}, 0, 0, BlendMode::Src, 255) == Status::Overlap);
+  // ... and a source whose first row starts after the dst row 0 range but whose second row lands in dst row 1's range.
+  CHECK(blend(Surface{base, 32, 64, stride}, ConstSurface{base + stride + 128, 32, 64, stride * 2}, 0, 0, BlendMode::Src, 255) == Status::Ok);
+  for (std::size_t i = 0; i < big.size(); i += 4093) CHECK(big[i] == 0x22);
+}
+
 TEST_CASE("box_blur and blur3 match the tables", "[composite]") {
   for (const BlurCase& c : blur_cases()) {
     INFO(c.name);
