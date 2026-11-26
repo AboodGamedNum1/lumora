@@ -97,6 +97,11 @@ struct LayoutResult {
 //   block_width is max_width if non-zero and the widest line otherwise.
 // - Quad rectangle: x = pen + offset_x (+ alignment shift), y = line_index * line_height + offset_y, w and h are the glyph
 //   pixel size times kOne.
+// - Arithmetic: every layout decision (pens, tab stops, the fit test against max_width, wrapping, alignment shifts) uses exact
+//   64-bit integer values. Input longer than 2^30 bytes is cut at a character boundary at or below 2^30 bytes and
+//   truncated is set, which keeps every intermediate value below 2^63 for any int32 font metrics. Only the values stored in
+//   Quad::x, Quad::y, LayoutResult::width and LayoutResult::height are clamped to the int32 range, at the final store.
+//   Saturation never changes which glyphs are drawn, where lines break or any alignment decision, and the status stays Ok.
 // Returns the totals even when out_quads is null (count only) or too small (BufferTooSmall, quads written up to capacity).
 LayoutResult layout_text(const Font& font, const char* utf8, std::size_t length, const LayoutOptions& opt, Quad* out_quads,
                          std::size_t capacity);
