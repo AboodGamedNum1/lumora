@@ -32,27 +32,28 @@ has the bits above that mask in a fixed pattern, and a continuation byte is mask
   "nearest, ties away from zero" of the header for non-negative values. The rounding is applied to the cumulative sum, so the
   per-glyph error never accumulates.
 - A pen or the width above 2^30 is `OutOfRange`. A value of exactly 2^30 is accepted, so it fits `std::int32_t`.
-- A hand made `Font` view with `units_per_em == 0` is not a parsed font. The code treats it as 1 so that nothing divides by zero;
-  this is not part of the interface.
+- A hand made `Font` view with `units_per_em == 0` is not a parsed font (a parsed font has 16 to 16384). It gives `BadFont` right
+  after the `NullBuffer` checks, so nothing divides by zero and nothing is substituted.
 
 ## Check order
 
 1. `NullBuffer`: font data, `out`, `out_count` or `width_fx` null, or a null text with a length above 0. An empty text still needs
    `out`, `out_count` and `width_fx`.
-2. `BadSize`: size not in 1 to `ttf::kMaxSizeFx`.
-3. `BufferTooSmall`: more than 4096 glyphs, or capacity below the glyph count (counted after decoding).
-4. `Overlap`.
-5. Per glyph in text order: `ttf::glyph_index`, then `ttf::glyph_advance`, then the glyph's own pen against 2^30. After the last
+2. `BadFont`: `units_per_em` is 0 (hand-built view only), also for an empty text.
+3. `BadSize`: size not in 1 to `ttf::kMaxSizeFx`.
+4. `BufferTooSmall`: more than 4096 glyphs, or capacity below the glyph count (counted after decoding).
+5. `Overlap`.
+6. Per glyph in text order: `ttf::glyph_index`, then `ttf::glyph_advance`, then the glyph's own pen against 2^30. After the last
    glyph the width is checked. The first error wins, so a lookup error of an earlier glyph beats an overflow found later.
 
-An empty text goes through steps 1 to 4 and then stores count 0 and width 0.
+An empty text goes through steps 1 to 5 and then stores count 0 and width 0.
 
 ## Overlap
 
-Five pairs are checked: `out` against `out_count`, against `width_fx` and against the font bytes (`font.data` for `font.size`), and
-`out_count` against `width_fx` and against the font bytes. The extent of `out` is always `out_capacity * sizeof(Placed)`, whatever the
-glyph count is, and a capacity of 0 is an empty range that overlaps nothing. The text is not checked. `width_fx` against the font
-bytes is not one of the pairs of the interface.
+Six pairs are checked: `out` against `out_count`, against `width_fx` and against the font bytes (`font.data` for `font.size`),
+`out_count` against `width_fx` and against the font bytes, and `width_fx` (4 bytes) against the font bytes, so a written width cannot
+land in the font. The extent of `out` is always `out_capacity * sizeof(Placed)`, whatever the
+glyph count is, and a capacity of 0 is an empty range that overlaps nothing. The text is not checked.
 
 The address rule is the one of `ttf::glyph_outline`: clear the top byte of both addresses, take the unsigned difference modulo `2^64`,
 answer "no overlap" at `|delta| >= 2^47` before any other arithmetic, then compare the exact ranges. Real buffers cannot reach the
@@ -76,11 +77,12 @@ its own format 4 lookup, advance lookup, cumulative rounding and FNV. The cases 
 - a random corpus (seed 0xA1, 3000 strings);
 - hand computed positions, including the 0.5 tie, the 0.75, 1.5 and 2.25 steps, and the replacement glyph;
 - null, size, capacity and run bound checks with their order; the 4096, 4097 and bad byte cases;
-- overlap for every pair with adjacent and one byte cases (the font bytes may start at any address), the capacity extent also above
+- overlap for all six pairs with adjacent and one byte cases (the font bytes may start at any address), the capacity extent also above
   4096 values, an empty range, and the order against `BufferTooSmall` and the cmap errors;
+- `BadFont` for `units_per_em` 0 with its place in the check order, also with an empty text;
 - no write on any error, with exact-size allocations so the address sanitizer sees any overrun.
 
-A mutation run over the module (78 mutants of the decoder ranges, the limits, the rounding, the check order, the overlap pairs and
-extents, the null handling and the digest) was caught except these, which cannot change a result: the lead byte `F0` lower bound
+A mutation run over the module (85 mutants of the decoder ranges, the limits, the rounding, the check order, the overlap pairs and
+extents, the null handling, the `BadFont` check and the digest) was caught except these, which cannot change a result: the lead byte `F0` lower bound
 (`EF` already belongs to the three byte branch, which is tested first); the continuation mask and the lead masks (the bits that
 differ are zero for every checked byte); the overlap `2^47` cutoff and the top byte mask (argued above).

@@ -111,6 +111,7 @@ ttf::Status shape_utf8(const ttf::Font& font, const char* text, std::size_t len,
                        std::uint32_t out_capacity, std::uint32_t* out_count, std::int32_t* width_fx) {
   if (font.data == nullptr || out == nullptr || out_count == nullptr || width_fx == nullptr) return Status::NullBuffer;
   if (text == nullptr && len > 0) return Status::NullBuffer;
+  if (font.units_per_em == 0) return Status::BadFont;  // a hand-built view; parsed fonts have 16 .. 16384
   if (size_fx < 1 || size_fx > ttf::kMaxSizeFx) return Status::BadSize;
   const u8* p = reinterpret_cast<const u8*>(text);
   // Count the glyphs, but stop as soon as the run is too long: no more than kMaxRunGlyphs + 1 code points are ever decoded.
@@ -125,13 +126,11 @@ ttf::Status shape_utf8(const ttf::Font& font, const char* text, std::size_t len,
   const u64 font_bytes = static_cast<u64>(font.size);
   if (ranges_overlap(out, out_bytes, out_count, sizeof(u32)) || ranges_overlap(out, out_bytes, width_fx, sizeof(std::int32_t)) ||
       ranges_overlap(out, out_bytes, font.data, font_bytes) || ranges_overlap(out_count, sizeof(u32), width_fx, sizeof(std::int32_t)) ||
-      ranges_overlap(out_count, sizeof(u32), font.data, font_bytes))
+      ranges_overlap(out_count, sizeof(u32), font.data, font_bytes) || ranges_overlap(width_fx, sizeof(std::int32_t), font.data, font_bytes))
     return Status::Overlap;
-  // width_fx against the font bytes is not one of the pairs of the interface (the width is written last, after all reads).
-
   Placed stage[kMaxRunGlyphs];  // at most 4096 glyphs (32 KiB of stack), copied to out only at the end
   const u64 size = static_cast<u64>(size_fx);
-  const u64 upem = font.units_per_em == 0 ? 1 : static_cast<u64>(font.units_per_em);  // a parsed font never has 0
+  const u64 upem = font.units_per_em;  // not 0: checked above
   u64 sum = 0;
   u32 count = 0;
   for (std::size_t i = 0; i < len;) {

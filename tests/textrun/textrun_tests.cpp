@@ -979,6 +979,19 @@ TEST_CASE("textrun: overlap pairs", "[textrun]") {
     REQUIRE(go2(2049 - fs, 2048, 4, 30000, 30004, "ABCD", 4) == Status::Overlap);
     std::memcpy(base + 2048 - fs, fb.data(), fs);
     REQUIRE(go2(2048 - fs, 2048, 4, 30000, 30004, "ABCD", 4) == Status::Ok);
+    // width_fx (4 bytes, aligned) against the font bytes at 4000 .. 4000 + fs
+    std::memcpy(base + 4000, fb.data(), fs);
+    REQUIRE(go2(4000, 8192, 4, 30000, 4000, "A", 1) == Status::Overlap);          // at the font start
+    REQUIRE(go2(4000, 8192, 4, 30000, 4000 + 8, "A", 1) == Status::Overlap);      // inside
+    REQUIRE(go2(4000, 8192, 4, 30000, 4000 + fs - 4, "A", 1) == Status::Overlap);  // the last four bytes
+    REQUIRE(go2(4000, 8192, 4, 30000, 4000 - 4, "A", 1) == Status::Ok);           // ends at the font start
+    REQUIRE(go2(4000, 8192, 4, 30000, 4000 + fs, "A", 1) == Status::Ok);          // starts at the font end
+    REQUIRE(go2(4000, 8192, 4, 30000, 4000, "", 0) == Status::Overlap);           // also for an empty text
+    // one byte granularity for the width: a font that starts on the last byte of width_fx, or right after it
+    std::memcpy(base + 20003, fb.data(), fs);
+    REQUIRE(go2(20003, 8192, 4, 30000, 20000, "A", 1) == Status::Overlap);
+    std::memcpy(base + 20004, fb.data(), fs);
+    REQUIRE(go2(20004, 8192, 4, 30000, 20000, "A", 1) == Status::Ok);
     // an empty out (capacity 0) inside the font bytes overlaps nothing
     std::memcpy(base + 4000, fb.data(), fs);
     REQUIRE(go2(4000, 4008, 0, 30000, 30004, "", 0) == Status::Ok);
@@ -988,12 +1001,28 @@ TEST_CASE("textrun: overlap pairs", "[textrun]") {
   }
 }
 
-TEST_CASE("textrun: a hand edited view with zero units per em does not divide by zero", "[textrun]") {
+TEST_CASE("textrun: a hand built view with zero units per em is BadFont", "[textrun]") {
   Font f = parsed(0);
-  f.units_per_em = 0;  // not a parsed font; treated like 1 so that nothing divides by zero
+  f.units_per_em = 0;
   Placed out[2];
-  u32 n = 0;
-  i32 w = 0;
+  u32 n = 11;
+  i32 w = 12;
+  REQUIRE(shape_utf8(f, "A", 1, 3, out, 2, &n, &w) == Status::BadFont);
+  REQUIRE(shape_utf8(f, nullptr, 0, 3, out, 0, &n, &w) == Status::BadFont);  // also for an empty text
+  REQUIRE(shape_utf8(f, "", 0, 3, out, 0, &n, &w) == Status::BadFont);
+  REQUIRE(shape_utf8(f, "A", 1, 0, out, 2, &n, &w) == Status::BadFont);      // before BadSize
+  REQUIRE(shape_utf8(f, "AB", 2, 3, out, 1, &n, &w) == Status::BadFont);     // before BufferTooSmall
+  REQUIRE(n == 11);
+  REQUIRE(w == 12);
+  // the NullBuffer checks come first
+  REQUIRE(shape_utf8(f, "A", 1, 3, nullptr, 2, &n, &w) == Status::NullBuffer);
+  REQUIRE(shape_utf8(f, nullptr, 1, 3, out, 2, &n, &w) == Status::NullBuffer);
+  Font nf = f;
+  nf.data = nullptr;
+  REQUIRE(shape_utf8(nf, "A", 1, 3, out, 2, &n, &w) == Status::NullBuffer);
+  // a real view (16) is fine and the smallest and largest values of a parsed font are not rejected
+  f.units_per_em = 16;
   REQUIRE(shape_utf8(f, "A", 1, 3, out, 2, &n, &w) == Status::Ok);
-  REQUIRE(w == 1800);
+  f.units_per_em = 1;
+  REQUIRE(shape_utf8(f, "A", 1, 3, out, 2, &n, &w) == Status::Ok);
 }
