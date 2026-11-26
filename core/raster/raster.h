@@ -46,6 +46,7 @@ struct Target {
   std::uint32_t width, height, stride;
 };
 
+// A contour_count above kMaxContours is reported as BadContour; the contour entries are then not inspected for null pointers.
 // Fills the whole target (every pixel of every row, not the stride padding) with coverage 0..255. Checks in enum order
 // (NullBuffer, BadSize, BadFill, BadContour, BadPoint); on any error nothing is written. contour_count == 0 is valid and
 // clears the mask. Every contour is implicitly closed. Points may lie outside the target (clipped exactly).
