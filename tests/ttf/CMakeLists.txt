@@ -4,4 +4,4 @@ target_link_libraries(lumora_ttf_tests PRIVATE lumora_core Catch2::Catch2WithMai
 target_include_directories(lumora_ttf_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../core/ttf)
 lumora_target_warnings(lumora_ttf_tests)
 add_test(NAME lumora_ttf_tests COMMAND lumora_ttf_tests)
-target_include_directories(lumora_ttf_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../core/flatten ${CMAKE_CURRENT_SOURCE_DIR}/../../core/outline ${CMAKE_CURRENT_SOURCE_DIR}/../../core/outline)
+target_include_directories(lumora_ttf_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../core/flatten ${CMAKE_CURRENT_SOURCE_DIR}/../../core/outline)
