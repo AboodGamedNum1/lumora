@@ -154,6 +154,7 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | Frame statistics and fps overlay text (core/lifecycle/frame_stats: 120-frame window, average, p99, worst, overlay line formatter) | merged c99cdce (contributor module, CI-verified unit tests, independent Python reference, mutation check); not yet wired to a renderer overlay; software evidence only |
 | Vsync period estimator (core/lifecycle/vsync: median of the last 16 frame deltas with pause-gap reset) | merged c5a4a31 (contributor module, CI-verified unit tests, independent Python reference, mutation check); not yet wired to the pacing loop; software evidence only |
 | Render gate (core/lifecycle/render_gate: surface, visibility and screen-off events to start and stop edges of the frame loop) | merged 210a8b8 (contributor module, CI-verified unit tests, independent Python reference, mutation check); not yet wired to the wallpaper service; software evidence only |
+| Power policy (core/lifecycle/power_policy: render-scale percent, quality preset and scaled sizes from battery saver and notch) | interface and stubs on main; implementation not started (contributor scope); not CI-verified yet |
 | glTF binary loader (core/glb, M4 asset groundwork, written by the agent) | merged (98e2aaf), CI-verified on Linux and Windows (13 of 13 checks); container, JSON, buffer views, accessors, triangle meshes, limits, fuzz target with corpus, golden digest from an independent Python reference; software evidence only |
 
 ## 6b. MW: Windows desktop runtime (planned)
