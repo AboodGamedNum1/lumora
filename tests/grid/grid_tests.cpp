@@ -199,7 +199,7 @@ TEST_CASE("init: statuses and order", "[grid][init]") {
   REQUIRE(g.init(0, 0, 1, kMaxCellsPerAxis + 1, 4) == GridStatus::BadCells);
   REQUIRE(g.init(0, 0, 1, 4, kMaxCellsPerAxis + 1) == GridStatus::BadCells);
   REQUIRE(g.init(0, 0, 1, kMaxCellsPerAxis, kMaxCellsPerAxis) == GridStatus::Ok);
-  REQUIRE(g.init(0, 0, 1e-45f, 1, 1) == GridStatus::Ok);  // smallest positive cell size
+  REQUIRE(g.init(0, 0, from_bits(1u), 1, 1) == GridStatus::Ok);  // smallest positive cell size
   REQUIRE(g.init(0, 0, kBig, 2, 2) == GridStatus::Ok);
   // Check order: cell size, then origin, then cells.
   REQUIRE(g.init(kNaN, 0, 0.0f, 0, 0) == GridStatus::BadCellSize);
