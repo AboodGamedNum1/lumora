@@ -23,7 +23,7 @@ enum class GridStatus : std::uint8_t {
   BadCells,      // cells_x or cells_y is 0 or > kMaxCellsPerAxis
   BadBox,        // non-finite coordinate or min > max (checked on insert and update)
   TooManyItems,  // insert beyond kMaxItems live items
-  UnknownItem,   // id not live (remove, update, query_item)
+  UnknownItem,   // id not live (remove, update)
 };
 const char* grid_status_text(GridStatus s);
 
@@ -37,9 +37,14 @@ class SpatialGrid {
   SpatialGrid(const SpatialGrid&) = delete;
   SpatialGrid& operator=(const SpatialGrid&) = delete;
 
+  // Check order: BadCellSize, BadOrigin, BadCells. A failed init leaves the grid unchanged. A successful init clears all
+  // items and restarts ids at 0 (a new grid). Before the first successful init: insert returns BadCells, remove and
+  // update return UnknownItem, live_count, query and pairs return 0.
   GridStatus init(float origin_x, float origin_y, float cell_size, std::uint32_t cells_x, std::uint32_t cells_y);
 
   // Insert a box. Item ids are handed out in increasing order starting at 0 and are never reused after remove.
+  // BadBox is checked first, then TooManyItems (live items, or id space exhausted). Update checks BadBox, then UnknownItem.
+  // Box float bits are stored unchanged (signed zero included).
   GridStatus insert(const Aabb& box, std::uint32_t& out_id);
   GridStatus remove(std::uint32_t id);
   GridStatus update(std::uint32_t id, const Aabb& box);
