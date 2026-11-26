@@ -23,7 +23,11 @@ enum class BlitResult : std::uint8_t { Ok = 0, NullArgument = 1, BadSize = 2, Ba
 // would not really collide (the destination span is a conservative bounding range).
 // On Ok exactly these dst bytes are written and no others: the w x h block takes the src pixels; then, if x + w < dst_w, the cell right of
 // each of the h rows (column x + w) is set to 0; then, if y + h < dst_h, the row below (row y + h, columns x to x + wp - 1, which includes
-// the corner cell when x + w < dst_w) is set to 0. Hand-given x and y are not otherwise restricted (0 to dst_w - w and 0 to dst_h - h).
+// the corner cell when x + w < dst_w) is set to 0. x and y have no range check of their own: any uint32 is accepted until the uint64 sums x + w and y + h decide
+// OutOfBounds, so x = UINT32_MAX is OutOfBounds, never a wrap. The padded size wp and hp shrinks at the right and bottom atlas edge, so
+// no cell outside the atlas is part of the destination span or written. Overlap is decided only after OutOfBounds, by comparing integer
+// addresses (no pointer outside a buffer is ever formed). image_digest reads only the bytes through (h - 1) * stride + w (never stride
+// padding or extra capacity) and returns the offset basis for any invalid argument even when pixels is not null.
 BlitResult blit_coverage(const std::uint8_t* src, std::uint32_t w, std::uint32_t h, std::uint32_t src_stride, std::uint8_t* dst,
                          std::uint32_t dst_w, std::uint32_t dst_h, std::uint32_t dst_stride, std::uint32_t x, std::uint32_t y);
 
