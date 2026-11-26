@@ -24,7 +24,9 @@ std::uint32_t hash2(std::uint32_t seed, std::int32_t x, std::int32_t y);
 std::uint32_t hash3(std::uint32_t seed, std::int32_t x, std::int32_t y, std::int32_t z);
 
 // Smoothstep-like fade used by value and gradient noise: fade(t) = t*t*t*(t*(t*6 - 15) + 10) on t in 0..65536 (Q16, with
-// 65536 allowed as the end point), result in 0..65536, computed in 64-bit with ONE rounding at the end (round half up).
+// 65536 allowed as the end point), result in 0..65536. The value is the exact rational t^3 * (6 t^2 - 15 t 65536 + 10 * 65536^2) / 2^64 rounded ONCE, half up.
+// The numerator reaches 2^80, so it needs a portable multi-word multiply (no compiler extensions); t above 65536 is treated
+// as 65536. fade(0) = 0 and fade(65536) = 65536.
 std::uint32_t fade(std::uint32_t t);
 
 // Value noise: hash of the four (2D) or eight (3D) lattice corners, taken as hash >> 16 (0..65535), blended with fade() weights,
@@ -40,13 +42,17 @@ Q16 gradient3(std::uint32_t seed, Pos x, Pos y, Pos z);
 
 // Cellular (Worley) noise F1, 2D: one feature point per cell at a hashed offset, nearest point over the 3 x 3 cells around
 // the sample, squared distance in 64 bits, result = min(65535, isqrt(d2) rounded down in the Q16 scale) (the integer
-// square root is exact and defined in docs/noise.md). Returns 0..65535.
+// square root is exact and defined in docs/noise.md). Returns 0..65535. The search covers only the 3 x 3 cells, so this is by
+// definition the nearest of those nine feature points; it can differ from the true nearest point in rare cases and the docs
+// must say so.
 Q16 cellular2(std::uint32_t seed, Pos x, Pos y);
 
 // Fractal sum (fBm) of an octave function over `octaves` (1..8): octave i samples at position * 2^i (wrapping in int32 as
 // unsigned arithmetic) with seed + i, weights halve each octave, the sum is normalized by the total weight with one rounding.
 // kind selects value2, gradient2 or cellular2. Returns 0..65535.
 enum class Kind : std::uint8_t { Value = 0, Gradient = 1, Cellular = 2 };
+// An invalid kind or octaves value returns 0 (fill_image reports them as errors). Weights are 128 >> i for octave i; the result
+// is (sum of weight * value + total_weight / 2) / total_weight with integer division.
 Q16 fbm2(Kind kind, std::uint32_t seed, Pos x, Pos y, std::uint32_t octaves);
 
 enum class Status : std::uint8_t {
@@ -56,6 +62,7 @@ enum class Status : std::uint8_t {
   BadKind,     // Kind outside the enum
   BadOctaves,  // octaves is 0 or > 8
 };
+// status_text gives the lower-case spaced enum name ("ok", "null buffer", "bad size", ...) and "unknown noise status" for an unknown value.
 const char* status_text(Status s);
 constexpr std::uint32_t kMaxSize = 8192;
 
