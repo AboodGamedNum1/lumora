@@ -53,7 +53,7 @@ const char* status_text(Status s);
 std::uint32_t contour_bound(std::uint32_t point_count, bool closed);
 std::uint32_t point_bound(std::uint32_t point_count, bool closed);
 
-// Integer square root used for lengths: for d2 >= 1 the NEAREST integer L to the real square root of d2 (no ties exist), L >= 1.
+// Integer square root used for lengths (inputs above the contract, d2 > 2^60, may saturate the result to the uint32 maximum): for d2 >= 1 the NEAREST integer L to the real square root of d2 (no ties exist), L >= 1.
 // d2 up to 2^60. Exposed so it can be tested directly. Returns 0 for d2 == 0.
 std::uint32_t isqrt_nearest(std::uint64_t d2);
 
@@ -78,6 +78,16 @@ std::uint32_t isqrt_nearest(std::uint64_t d2);
 //       Miter: m = o1 + o2 (int64), the tip t = p + round(m * 2 * h * h / (m.x * m.x + m.y * m.y)) per coordinate (nearest, ties away
 //       from zero; m is not zero because cross != 0). If |t - p|^2 > (miter_limit * h)^2 the join is a Bevel instead. Otherwise the
 //       quad (p, a, t, b), reordered counter-clockwise. The bounds: |m| <= 2^21, h <= 2^19, so m * 2 * h * h <= 2^59 fits int64.
+//     Join resolution (binding, from the scope W gate). (a) If m is the zero vector (rounded outer normals cancel although the turn is
+//     not zero, for example (0,0),(0,3),(1,0) with half width 1) the join is a Bevel. (b) Contour orientation: a Bevel triangle or a
+//     Miter quad with negative doubled signed area is listed in reverse after its first point (p, b, a or p, b, t, a); a zero area
+//     bevel keeps the listed order (p, a, b) and is still emitted (the contour count never changes). (c) The output must be convex:
+//     a Miter quad (after the orientation of (b)) is accepted only if all four consecutive turns (cross products of consecutive edge
+//     vectors, cyclic) are strictly positive; otherwise the join is a Bevel. Literal reflex or self-intersecting miter quads, which
+//     the integer rounding can produce (for example (0,0),(0,1),(1,2) and (0,0),(1,1),(2,3) with half width 3), are NOT kept.
+//     (d) The miter limit test compares coordinate magnitudes first: if |t.x - p.x| or |t.y - p.y| exceeds miter_limit * h
+//     (at most 2^25) the join is a Bevel; only otherwise are the squares formed (at most 2^52), so no int64 overflow. The rounded
+//     division result itself is at most 2h^2 <= 2^39 per coordinate. Document the equivalence with the squared test.
 //  3. Caps of an open line, Cap::Square only: at the first point the quad (p0 - n, p0 + n, p0 + n - d, p0 - n - d) and at the last
 //     point (pe + n, pe - n, pe - n + d, pe + n + d) where n is the normal of the first (resp. last) segment and d is the segment
 //     direction offset vector (n rotated a quarter turn back, i.e. d = (n.y, -n.x) for the normal n = (-dy, dx) scaled), each listed
