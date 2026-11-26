@@ -51,12 +51,37 @@ struct ExtractPlan {
 // the archive's directory entries. The check order is: PathTooLong, PathTooDeep (per entry in order), then
 // FileDirectoryConflict, TooManyDirectories, SizeOverflow, InsufficientSpace. On any failure directories and
 // file_order are empty.
+// Binding details:
+//   - Per-entry stage: the first failing entry in input order wins, PathTooLong before PathTooDeep for that entry.
+//     Depth counts components including the file name, equality with the limit passes, a limit of 0 rejects every
+//     entry. Path length is the name bytes including separators, equality passes.
+//   - FileDirectoryConflict: two names conflict when one is a file name and the other has it as a parent
+//     directory, and the two strings are equal exactly, or equal after ASCII case folding alone, or equal after
+//     the Latin-1 normalization alone. The foldings are never composed (uppercase E plus combining acute does not
+//     match lowercase precomposed e-acute), as in the entry policy's open cases. entry_index is the earliest input
+//     entry whose name is the conflicting file. The folding helpers stay private to entry_policy.cpp: the plan
+//     keeps its own copy and cross-checks it against validate_entries in tests.
+//   - TooManyDirectories counts distinct exact parent strings (no folding; a/x and A/y count two), proper prefixes
+//     ending at a '/'. Equality with max_directories passes, 0 allows top-level files only. entry_index is the
+//     entry that introduces the first directory above the limit.
+//   - SizeOverflow: entry_index is the entry whose size overflows the running sum; when only total plus
+//     reserve_bytes overflows, entry_index is 0. total_bytes and required_free_bytes are 0 on every failure except
+//     InsufficientSpace (entry_index 0, both filled). Equality of free_bytes with the requirement passes.
+//   - Directories that differ only in case (a/x and A/y) both appear in the plan. The caller must treat "already
+//     exists" as success when creating directories. Open case, documented.
+//   - Extraction goes into a new, empty target directory chosen by the caller. cleanup_paths lists every directory
+//     of the plan and would delete one that existed before, so the caller must not point it at an existing tree.
+//   - Names are not revalidated. A name that breaks the input contract must not crash the plan; it is split on '/'
+//     as given and gets no new verdict.
 ExtractPlan plan_extraction(const std::vector<EntryInfo>& entries, std::uint64_t free_bytes,
                             const ExtractLimits& limits = {});
 
 // Cleanup after a cancelled or failed extraction: given how many entries of file_order were fully written
 // (the next one may be partial), returns the relative paths to delete, in deletion order: the partial file,
 // the written files in reverse, then every directory of the plan in reverse (children before parents).
+// completed_files is clamped to the number of files in file_order; partial_file_exists names the file at
+// file_order[completed_files] only when completed_files is below that number. A plan whose verdict is not Ok
+// gives an empty list. An index in file_order outside entries is skipped.
 // Deleting a path that does not exist is the caller's concern. Never returns a path outside the plan.
 std::vector<std::string> cleanup_paths(const ExtractPlan& plan, const std::vector<EntryInfo>& entries,
                                        std::size_t completed_files, bool partial_file_exists);
