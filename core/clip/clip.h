@@ -41,22 +41,33 @@ const char* status_text(Status s);
 
 // Liang-Barsky style clip of the closed segment p0 p1 to the closed rectangle. The part of the segment inside the rectangle is
 // computed exactly (rational parameters, no float); the visible endpoints are rounded by the rule above, each coordinate
-// independently, and then clamped into the rectangle. *visible is false when no point of the segment lies in the rectangle (the
+// independently, and then clamped into the rectangle. The rounding is of the exact rational coordinate, so the result does not depend
+// on which endpoint is used as the base of the formula (translation by an integer commutes with the rule). *visible is false when no point of the segment lies in the rectangle (the
 // outputs are then untouched). A segment that touches the rectangle in one point is visible with a == b. Checks: NullBuffer,
-// BadRect, BadPoint. Writes outputs only on Ok and visible.
+// BadRect, BadPoint. Writes outputs only on Ok and visible, after the whole result is computed, so a and b may alias p0 and p1.
 Status clip_segment(const Rect& r, const Point& p0, const Point& p1, Point* a, Point* b, bool* visible);
 
 // Sutherland-Hodgman clip of a polygon (any point order, not validated) against the rectangle, edge order fixed: left (x >= x0),
 // bottom (y >= y0), right (x <= x1), top (y <= y1). Walk the ring: for each edge from the previous point to the current point
 // (the first edge is from the LAST point to the first), output rules are the textbook ones: both inside: output current; leaving:
 // output the intersection; entering: output the intersection then current; both outside: nothing. "Inside" is closed (a point on
-// the clip line is inside). Intersections use the rounding rule above, computed on the exact input edge of that stage (the stage input
-// points are already integers). Output capacity bound: every stage can add at most one point per input edge, so the final count is
-// at most 2 * point_count (document the proof); out_capacity < 2 * point_count is BufferTooSmall even if fewer are produced.
-// *out_count is 0 when nothing remains. Checks: NullBuffer, BadCount (point_count < 3 or > kMaxPoints), BadRect, BadPoint,
-// BufferTooSmall, Overlap (in, out, scratch of 2 * 2 * point_count points: scratch_size, and *out_count), in this order.
-// scratch must hold scratch_size(point_count) points (two ping-pong buffers).
-std::uint32_t scratch_size(std::uint32_t point_count);  // 4 * point_count, 0 for an invalid count
+// the clip line is inside). No de-duplication, repeated and collinear points are kept; fewer than 3 output points and an empty
+// result are valid (Ok, *out_count may be 0, 1 or 2). Intersections use the rounding rule above, computed on the exact input edge of
+// that stage (the stage input points are already integers).
+// Capacity: one stage turns m points into at most m + floor(m / 2) points. Proof to document: with I inside points and E entering
+// edges (E equals the number of leaving edges around the ring, E <= floor(m / 2), I <= m - E), a stage writes I + 2 * E <= m + E
+// points. The bound 2 * point_count is FALSE (for example the triangle (11,13) (-6,6) (10,-2) against the rectangle (0,0) (10,10)
+// gives 3, 4, 5, 6, 7 points over the four stages). So, with g(m) = m + floor(m / 2): polygon_bound(n) = g(g(g(g(n)))) is the
+// data independent output capacity that must be provided, and scratch_size(n) = g(g(g(n))) + g(g(n)) points (two ping-pong halves:
+// the first holds the stage 1 and stage 3 results, the second the stage 2 result; stage 4 writes straight to out). Both are 0 for an
+// invalid count (n < 3 or n > kMaxPoints). out_capacity < polygon_bound(n) is BufferTooSmall even if fewer points are produced.
+// For n = 4096 the bounds are 20736 (out) and 23040 (scratch) points.
+// Checks in this order: NullBuffer (in, out, scratch, out_count, always required), BadCount (point_count < 3 or > kMaxPoints), BadRect,
+// BadPoint, BufferTooSmall (out_capacity, scratch_count), Overlap (every pair of: in (point_count points), scratch (scratch_size
+// points), out (polygon_bound points) and *out_count; modular address rule as in core/composite). Nothing is written on error; all
+// checks are data independent so no write can happen before a failure.
+std::uint32_t polygon_bound(std::uint32_t point_count);
+std::uint32_t scratch_size(std::uint32_t point_count);
 Status clip_polygon(const Rect& r, const Point* in, std::uint32_t point_count, Point* out, std::uint32_t out_capacity, Point* scratch,
                     std::uint32_t scratch_count, std::uint32_t* out_count);
 
@@ -64,13 +75,17 @@ Status clip_polygon(const Rect& r, const Point* in, std::uint32_t point_count, P
 // consecutive visible segments whose clipped joints coincide exactly, as the points of the run in order (a run restarts when a
 // segment is not visible or when its clipped start differs from the previous clipped end). Output: pts (all piece points in order)
 // and piece_ends (for each piece the end index into pts, exclusive). Bounds: at most 2 * (point_count - 1) points and at most
-// point_count - 1 pieces; capacities below those bounds are BufferTooSmall. *piece_count and *out_points receive the counts.
-// Checks: NullBuffer, BadCount (< 2 or > kMaxPoints), BadRect, BadPoint, BufferTooSmall, Overlap (all inputs and outputs and the
-// two counters), in this order.
+// point_count - 1 pieces; capacities below those bounds are BufferTooSmall. A segment that is visible only in one point (touching, or
+// a == b) is a piece of two equal points. Adjacent visible segments are one run when the rounded joint matches; the joint point is
+// written once. *piece_count and *out_points receive the counts.
+// Checks: NullBuffer, BadCount (< 2 or > kMaxPoints), BadRect, BadPoint, BufferTooSmall, Overlap (every pair of: in, the pts extent
+// of 2 * (point_count - 1) points, the piece_ends extent of point_count - 1 words, *piece_count and *out_points), in this order.
+// All pointers are required (the counters too).
 Status clip_polyline(const Rect& r, const Point* in, std::uint32_t point_count, Point* pts, std::uint32_t pts_capacity,
                      std::uint32_t* piece_ends, std::uint32_t piece_capacity, std::uint32_t* piece_count, std::uint32_t* out_points);
 
-// FNV-1a 64 over the 32-bit little-endian bytes of the x then y of each point as uint32 two's complement words.
+// FNV-1a 64 over the 32-bit little-endian bytes of the x then y of each point as uint32 two's complement words. A null pointer or a
+// zero count hashes zero bytes.
 std::uint64_t digest_points(const Point* pts, std::size_t count);
 
 }  // namespace lumora::clip

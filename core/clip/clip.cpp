@@ -4,6 +4,7 @@
 namespace lumora::clip {
 const char* status_text(Status) { return "stub"; }
 Status clip_segment(const Rect&, const Point&, const Point&, Point*, Point*, bool*) { return Status::NullBuffer; }
+std::uint32_t polygon_bound(std::uint32_t) { return 0; }
 std::uint32_t scratch_size(std::uint32_t) { return 0; }
 Status clip_polygon(const Rect&, const Point*, std::uint32_t, Point*, std::uint32_t, Point*, std::uint32_t, std::uint32_t*) { return Status::NullBuffer; }
 Status clip_polyline(const Rect&, const Point*, std::uint32_t, Point*, std::uint32_t, std::uint32_t*, std::uint32_t, std::uint32_t*, std::uint32_t*) { return Status::NullBuffer; }
