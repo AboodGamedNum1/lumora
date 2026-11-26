@@ -1,7 +1,7 @@
 // Lumora 2D polygon geometry module (scope I). Pure CPU, deterministic, no I/O, no threads.
 // The interface in this header is fixed; the contributor implements core/geom/geom.cpp only.
 // Results must be bit-identical on Linux, Windows and Android: only + - * / sqrt, double internally,
-// FMA contraction off, no libm transcendentals. Orientation tests must be exact for the inputs (see below).
+// FMA contraction off, no libm transcendentals. Orientation tests must be exact (see orient below).
 #pragma once
 #include <cstddef>
 #include <cstdint>
@@ -27,16 +27,20 @@ const char* poly_status_text(PolyStatus s);
 // Simple polygon, vertices in order, implicitly closed. Either winding is accepted.
 PolyStatus validate_polygon(const Pt* v, std::size_t n);  // checks in enum order; O(n^2) is fine
 
-// Twice the signed area, exact summation in double (shoelace, vertices in order). > 0 means counter-clockwise.
+// Twice the signed area (shoelace, vertices in order), computed exactly and rounded once to double.
+// > 0 means counter-clockwise. The rounding limit is documented in docs/geom.md.
 double signed_area2(const Pt* v, std::size_t n);
 
 // Exact orientation of three float points: +1 counter-clockwise, -1 clockwise, 0 collinear.
-// Float inputs make the determinant exactly computable in double (document the argument in docs/geom.md).
+// The sign is exact for every finite input (a plain double determinant is NOT always sign-correct, because
+// coordinate differences can be inexact). The method and its proof sketch are documented in docs/geom.md.
+// Non-finite input returns 0.
 int orient(const Pt& a, const Pt& b, const Pt& c);
 
 // Ear-clipping triangulation. Output: (n - 2) triangles as vertex indices, counter-clockwise triangles,
-// out_indices has room for 3 * (n - 2) entries. Ear choice rule: always clip the lowest-index valid ear,
-// restarting the scan from the previous vertex after each clip. Collinear vertices are removed as zero-area ears.
+// out_indices has room for 3 * (n - 2) entries. Ear choice rule: the scan starts at vertex 0 and walks the remaining
+// vertices cyclically; the first valid ear wins; after each clip the scan restarts at the vertex before the clipped one.
+// Details (containment rules, fallback) are documented in docs/geom.md. Collinear vertices are removed as zero-area ears.
 // Returns the number of triangles written (a collinear vertex may reduce it below n - 2) or 0 on an invalid polygon.
 std::size_t triangulate(const Pt* v, std::size_t n, std::uint32_t* out_indices);
 
