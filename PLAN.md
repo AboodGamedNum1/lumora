@@ -121,7 +121,8 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | 2D polygon geometry module (core/geom, M4 groundwork) | merged (ae08058), exact orientation, CI-verified on Linux and Windows with identical golden digests; software evidence only |
 | 2D transform and camera module (core/xform, M4 groundwork) | merged, CI-verified on Linux and Windows with identical golden digests; software evidence only |
 | 2D sprite batcher (core/batch, M4 groundwork) | merged (02e0990), CI-verified on Linux and Windows with identical golden digests; software evidence only |
-| 2D spatial grid broadphase (core/grid, groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
+| 2D spatial grid broadphase (core/grid, groundwork) | merged (dd105a5), CI-verified on Linux and Windows with identical golden digests; software evidence only |
+| Grid pathfinding (core/pathfind, groundwork) | interface and stubs on main; implementation in progress by a contributor; not CI-verified yet |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
