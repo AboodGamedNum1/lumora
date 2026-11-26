@@ -85,6 +85,23 @@ bool texture_bytes(const TextureInfo& t, std::uint64_t* out);
 // TextureDimension, SizeOverflow, TextureTooLarge, TextureBudget), then scripts in order (ScriptTooLarge,
 // ScriptBudget with overflow as SizeOverflow), then TooManyNodes, then audio in order (AudioTooLarge,
 // AudioTooLong, AudioBudget). Limits accept the value itself and reject the value plus one.
+// Binding details:
+//   - Per texture: validate first (zero width, height or layers, mip_levels 0, mip_levels above floor(log2(max(w, h)))
+//     + 1, an unknown format value: BadTexture, before any dimension check), then TextureDimension, then compute
+//     the bytes (arithmetic failure: SizeOverflow at that texture), then TextureTooLarge, then the running total
+//     (its overflow: SizeOverflow, then TextureBudget). texture_bytes returns false for an invalid texture or an
+//     overflow and leaves *out untouched.
+//   - TooManyTextures (strict excess of max_textures) is checked before any single texture and reports index 0;
+//     TooManyNodes likewise. There are no count limits for scripts or audio.
+//   - Zero limits accept equality and reject any positive value; max_textures 0 rejects any texture and
+//     max_texture_dimension 0 rejects every otherwise valid texture. Empty lists, zero-byte scripts and clips,
+//     zero duration and zero nodes pass.
+//   - Totals in the result count only items accepted before the offending one; the rejected item is never added.
+//     A later stage's total stays 0 when an earlier stage fails; a script failure keeps the final texture total; a
+//     node or audio failure keeps the final texture and script totals; Ok carries all final totals.
+//   - Inputs must come from validated headers of the real files; this module trusts nothing else about them.
+//   - Block formats: ceil(w / 4) * ceil(h / 4) blocks per level, at least one; Bc1 is 8 bytes and Bc7 16 bytes per
+//     block. to_string of an out-of-range enum value is "Unknown".
 BudgetResult check_load_budget(const SceneStats& stats, const LoadBudgetLimits& limits = {});
 
 const char* to_string(BudgetVerdict v);
