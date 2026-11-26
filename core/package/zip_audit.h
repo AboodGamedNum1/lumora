@@ -19,7 +19,7 @@ struct ZipAuditLimits {
   std::uint64_t max_entries = 10000;
   std::uint64_t max_name_bytes = 255;     // bytes of the stored name; longer is BadCentralHeader
   std::uint64_t max_extra_bytes = 1024;   // per entry, central and local each
-  std::uint64_t max_comment_bytes = 1024; // archive comment
+  std::uint64_t max_comment_bytes = 1024; // archive comment and each entry comment
 };
 
 enum class ZipVerdict {
@@ -66,6 +66,40 @@ struct ZipAuditResult {
   std::uint64_t directory_count = 0;
 };
 
+// Check order (the first failure wins, binding):
+//   1. TooLarge (size above max_archive_bytes), then TooSmall (below 22 bytes).
+//   2. End record: search the last min(size, 22 + 65535) bytes. A record is valid when its comment ends exactly
+//      at the buffer end. Two end-record signatures in that window is MultipleEndRecords (ZIP64 record and
+//      locator signatures inside a comment do not count). With no valid record: TrailingData when a signature
+//      is followed by bytes beyond its declared comment, else NoEndRecord. A comment above max_comment_bytes is
+//      NoEndRecord at the record offset. Disk fields not zero, or per-disk count different from total: MultiDisk.
+//   3. ZIP64: optional, but when any end-record field holds its sentinel (0xFFFF count, 0xFFFFFFFF size or
+//      offset) the locator must sit immediately before the end record and the ZIP64 record immediately before the
+//      locator (disk 0, one disk, record size field exactly 44). A locator without any sentinel, a value that
+//      would fit the ordinary field (canonical form is value >= sentinel), or any disagreement between the two
+//      records is Zip64Mismatch. Versions are not checked.
+//   4. TooManyEntries (count from the end record, directories included), then central directory bounds: it must
+//      end exactly where the ZIP64 record (or end record) starts, and hold exactly the declared count.
+//   5. Per central entry, in order: header fields and limits (BadCentralHeader, empty name included), then
+//      Encrypted (bits 0, 6, 13), UnsupportedFeature (bit 3 and every bit except 0, 1, 2, 6, 11, 13; bits 1 and 2
+//      only with method 8), UnsupportedMethod, SpecialFile (Unix mode type only when version-made-by OS is 3;
+//      regular, directory or unspecified pass), the directory rule (name ends with '/' if and only if the mode
+//      or the name says directory; a directory is method 0 with both sizes 0, else BadSizes). ZIP64 entry extra:
+//      only sentinel fields, in uncompressed, compressed, offset order, exact length, canonical; malformed is
+//      Zip64Mismatch (central) or BadLocalHeader (local). Other extra content is not interpreted.
+//   6. Local header at the recorded offset: BadLocalHeader, then HeaderMismatch for any difference in name,
+//      flags, method, CRC, sizes, modification time or date. Extras may differ.
+//   7. Sizes (BadSizes): stored needs equal sizes; deflate with 0 compressed bytes is BadSizes; sums and
+//      endpoints are checked in uint64, a wrap or a data end beyond the buffer is BadSizes at that entry.
+//   8. Layout in central order: first offset not 0 is PrependedData; then per entry: offset not above the
+//      previous one is OutOfOrder, below the previous data end is Overlap, above it is Gap; data reaching into
+//      the central directory is Overlap; a last data end below the central directory start is Gap.
+// An empty archive is Ok when the central directory is empty, starts at offset 0 and ends where the end record
+// starts; with a central directory offset above 0 it is PrependedData.
+// Offsets: end record problems report the end record (or locator) offset; entry problems report the offending
+// header or field offset and the central index; other verdicts report 0 for the index. On any failure entries and
+// directory_count are empty. Duplicate names and collisions are left to entry_policy.
+//
 // Layout accepted (everything else is rejected):
 //   [local header + data] x N, in central directory order, with no gap, starting at offset 0;
 //   central directory, starting exactly where the last entry data ends;
@@ -75,7 +109,7 @@ struct ZipAuditResult {
 // returned only through directory_count.
 ZipAuditResult audit_zip(const std::uint8_t* data, std::size_t size, const ZipAuditLimits& limits = {});
 
-// The entry list in the form validate_entries expects (names, compressed and uncompressed sizes).
+// The entry list in the form validate_entries expects: names and sizes copied in order, no filtering.
 std::vector<EntryInfo> to_entry_infos(const std::vector<ZipEntry>& entries);
 
 const char* to_string(ZipVerdict v);
