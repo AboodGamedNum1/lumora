@@ -131,7 +131,8 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | CPU signed distance fields (core/sdf, M4 text and UI groundwork) | merged (d83d5ab), CI-verified on Linux and Windows with golden digests; exact two-pass transform equal to brute force, SDF encoding, edge coverage; software evidence only |
 | CPU spatial index (core/spatial, hit testing and culling groundwork) | merged (ff982b1), CI-verified on Linux and Windows with identical golden digests (including 2^20 items); software evidence only |
 | CPU polygon tessellation (core/tess, shape and glyph fill groundwork) | merged (4200e18), CI-verified on Linux and Windows with identical golden digests; exact simple-polygon test, area, point location, ear clipping with collinear drops; unreachable defensive branches argued in docs/tess.md and backed by an exhaustive 3x3 grid enumeration, the fallback code itself is not executed by tests; software evidence only |
-| CPU rectangle clipping (core/clip, scissor groundwork) | interface and stubs on main; implementation not started (contributor scope V); not CI-verified yet |
+| CPU rectangle clipping (core/clip, scissor groundwork) | merged (9cef902), CI-verified on Linux and Windows with identical golden digests; exact rational clipping, proven polygon and scratch bounds, shared overlap rule, mutation checks with equivalence arguments for the two surviving mutants; the 2^47 overlap early out is argued and not exercised by tests; software evidence only |
+| CPU polyline stroking (core/stroke, line and outline groundwork) | interface and stubs on main; implementation not started (contributor scope W); not CI-verified yet |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
