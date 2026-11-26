@@ -23,8 +23,10 @@ struct DiagLog {
 };
 
 // Valid state: count <= kLogCapacity and next < kLogCapacity. An invalid object is treated as empty by every function below: log_push
-// first resets count and next to 0 (dropped and the slots are left as they are), the read functions see no entries.
+// first resets count and next to 0 (dropped and the slots are left as they are) and then writes a normal first entry without
+// counting a drop; the read functions see no entries. A non-full valid object honors its next even if it differs from count.
 
+// log_clear resets the whole object even if its state is invalid. log_size is count for a valid log, 0 for a null or invalid one.
 // Clears everything: all slots zero, count 0, next 0, dropped 0. Returns false when log is null.
 bool log_clear(DiagLog* log);
 
@@ -41,9 +43,11 @@ bool log_read(const DiagLog* log, std::uint32_t index, LogEntry* out);
 // Number of valid entries: 0 for a null or invalid log.
 std::uint32_t log_size(const DiagLog* log);
 
-// FNV-1a 64 over 32-bit little-endian words: per entry from the oldest to the newest: timestamp low 32 bits, timestamp high 32 bits,
+// FNV-1a 64 over 32-bit little-endian words, byte-wise (xor the byte, then multiply by the FNV prime; each word least significant
+// byte first; struct padding is never hashed; the initial value is the FNV offset basis, which is also the digest of a null log): per entry from the oldest to the newest: timestamp low 32 bits, timestamp high 32 bits,
 // code (zero extended), a, b (as uint32 two's complement); then dropped low 32 bits and dropped high 32 bits. A null log hashes zero
-// bytes; an invalid log hashes as an empty log (only the two dropped words).
+// bytes; an invalid log hashes as an empty log: no entries, but the supplied dropped counter is still hashed as its two words
+// (it is not reset).
 std::uint64_t log_digest(const DiagLog* log);
 
 }  // namespace lumora::diag
