@@ -61,15 +61,18 @@ std::uint32_t point_bound(std::uint32_t command_count);
 // closed contour and 0 for an open one. *contour_count and *point_count_out receive the counts.
 // Checks in this order: NullBuffer (all pointers), BadCount, BadTolerance, BadCommand (all commands in order, then), BadPoint (used
 // points in command order), BadPath (first violation in command order), BufferTooSmall (pts_capacity < point_bound,
-// ends_capacity < contour_bound, closed_capacity < contour_bound), Overlap (every pair of: commands (command_count Commands),
+// ends_capacity < contour_bound, closed_capacity < contour_bound), Overlap (all 15 pairs of the six extents: commands (command_count * sizeof(Command) bytes),
 // pts (point_bound points), contour_ends (contour_bound words), closed (contour_bound bytes), *contour_count and *point_count_out).
 // Nothing is written on error; the checks are data independent except that BadPath depends on the sequence of ops only.
 Status build_outline(const Command* commands, std::uint32_t command_count, std::int32_t tolerance, Point* pts,
                      std::uint32_t pts_capacity, std::uint32_t* contour_ends, std::uint32_t ends_capacity, std::uint8_t* closed,
                      std::uint32_t closed_capacity, std::uint32_t* contour_count, std::uint32_t* point_count_out);
 
-// FNV-1a 64 over 32-bit little-endian words: the contour count, then per contour its end index, its closed flag (0 or 1), and then
-// all points x then y as uint32 two's complement words. Null pointers or zero counts hash only the words that exist.
+// FNV-1a 64 over 32-bit little-endian words (each word as 4 bytes, low byte first), binding rules from the scope Y gate:
+//  1. Always the word contour_count (so an empty outline hashes one zero word, not the bare FNV basis).
+//  2. If contour_count is 0, or contour_ends or closed is null, nothing more is hashed.
+//  3. Otherwise per contour in order: its end index, then its closed flag normalised to 0 or 1 (any nonzero byte is 1).
+//  4. Then, only if pts is not null, the points 0 .. contour_ends[contour_count - 1] - 1: x then y as uint32 two's complement words.
 std::uint64_t digest_outline(const Point* pts, const std::uint32_t* contour_ends, const std::uint8_t* closed,
                              std::uint32_t contour_count);
 
