@@ -977,3 +977,99 @@ TEST_CASE("triangulate equals the naive reference on mid-size comb, spiral and c
       REQUIRE(tiling_ok(p, t));
     }
 }
+
+// Exhaustive enumeration on a 3x3 grid: every sequence of 3 to 7 distinct grid points, so every polygon in every start vertex
+// and both windings (a sequence and its reverse are both enumerated). The aggregate constants come from an independent Python
+// script (its own simple test and naive rule). This is supporting evidence about the rule and the module, not branch coverage:
+// the fallback code is still not executed through the public API, and the enumeration only shows it is never needed here.
+// Split: sanitized builds stop at 6 vertices to bound run time, an uninstrumented build also runs 7.
+#if defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_UNDEFINED__)
+constexpr int kEnumMax = 6;
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer) || __has_feature(undefined_behavior_sanitizer)
+constexpr int kEnumMax = 6;
+#else
+constexpr int kEnumMax = 7;
+#endif
+#else
+constexpr int kEnumMax = 7;
+#endif
+
+namespace {
+struct EnumTotals {
+  u64 sequences = 0, simple = 0, ccw = 0, cw = 0, tris = 0, drops = 0;
+};
+
+struct EnumState {
+  EnumTotals tot[8];
+  Pts cur;
+  bool used[9] = {};
+  int maxk = 0;
+};
+
+void enum_walk(EnumState& s) {
+  const int k = static_cast<int>(s.cur.size());
+  if (k >= 3) {
+    EnumTotals& t = s.tot[k];
+    ++t.sequences;
+    bool simple = false;
+    REQUIRE(is_simple(s.cur.data(), static_cast<u32>(k), &simple) == Status::Ok);
+    bool ref_ok = false;
+    {
+      // independent of the module: brute force simple test of this file
+      ref_ok = ref_simple(s.cur);
+    }
+    REQUIRE(simple == ref_ok);
+    if (simple) {
+      ++t.simple;
+      i64 a = 0;
+      REQUIRE(area2(s.cur.data(), static_cast<u32>(k), &a) == Status::Ok);
+      REQUIRE(a == ref_area2(s.cur));
+      (a > 0 ? t.ccw : t.cw)++;
+      const Tri tr = run_tri(s.cur);
+      REQUIRE(tr.st == Status::Ok);
+      const Naive ref = naive_tri(s.cur);
+      REQUIRE(ref.fallbacks == 0);
+      REQUIRE(tr.count == static_cast<u32>(k) - 2 - ref.drops);
+      REQUIRE(tr.out == ref.tris);
+      REQUIRE(tiling_ok(s.cur, tr));
+      t.tris += tr.count;
+      t.drops += ref.drops;
+    } else {
+      const Tri tr = run_tri(s.cur);
+      REQUIRE(tr.st == Status::BadPolygon);
+    }
+  }
+  if (k == s.maxk) return;
+  for (int i = 0; i < 9; ++i) {
+    if (s.used[i]) continue;
+    s.used[i] = true;
+    s.cur.push_back({i / 3, i % 3});
+    enum_walk(s);
+    s.cur.pop_back();
+    s.used[i] = false;
+  }
+}
+}  // namespace
+
+TEST_CASE("exhaustive 3x3 grid: every distinct-point sequence of 3 to 7 vertices, both windings", "[tess][enum]") {
+  // k: sequences, simple, ccw, cw, triangles, drops (independent Python)
+  struct Row {
+    u64 seq, simple, ccw, cw, tris, drops;
+  };
+  const Row want[8] = {{}, {}, {}, {504, 456, 228, 228, 456, 0},        {3024, 1136, 568, 568, 2176, 96},
+                       {15120, 2400, 1200, 1200, 6728, 472}, {60480, 3312, 1656, 1656, 12176, 1072}, {181440, 2464, 1232, 1232, 11112, 1208}};
+  EnumState s;
+  s.maxk = kEnumMax;
+  enum_walk(s);
+  for (int k = 3; k <= kEnumMax; ++k) {
+    INFO("vertices " << k);
+    REQUIRE(s.tot[k].sequences == want[k].seq);
+    REQUIRE(s.tot[k].simple == want[k].simple);
+    REQUIRE(s.tot[k].ccw == want[k].ccw);
+    REQUIRE(s.tot[k].cw == want[k].cw);
+    REQUIRE(s.tot[k].tris == want[k].tris);
+    REQUIRE(s.tot[k].drops == want[k].drops);
+    REQUIRE(s.tot[k].tris == want[k].simple * (static_cast<u64>(k) - 2) - want[k].drops);
+  }
+}

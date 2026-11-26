@@ -86,22 +86,38 @@ of the triangles emitted so far, and each emitted triangle has positive doubled 
 - Hence, by induction, the emitted triangles tile the polygon exactly, and the sum of their doubled areas equals `|area2|` once
   the ring has been reduced to nothing. The tests assert that equality for every triangulation.
 
-Existence of a closed ear (the two ears theorem with the exact rule). A simple ring with at least four vertices and no collinear
-vertex has two non-adjacent vertices that are ears in the sense of the rule (strictly convex, closed triangle free of other
-vertices). Proof by induction on the number of vertices. Take the lowest-leftmost vertex v: it is strictly convex (a vertex with
-the smallest x and then y has a turn of at least zero, and zero is excluded). Let T = (a, v, b). If no other vertex is in the
-closed T, v is an ear. Otherwise let u be the vertex in the closed T (other than a, v, b) that is farthest from the line ab. The
-segment vu contains no vertex (a vertex between would be farther from ab) and lies inside the polygon. It splits the ring into two
-simple rings with fewer vertices, each having v and u as adjacent vertices. A ring with three vertices has three ears. A ring with
-at least four has two non-adjacent ears by the hypothesis, and they cannot both be among the adjacent pair v, u, so at least one ear
-x is a vertex other than v and u. The triangle of x lies inside its sub-ring, and no vertex of the other sub-ring can be inside it
-(those lie outside the sub-ring except on the segment vu, which holds no vertex), so x is an ear of the whole ring. Doing this
-in both sub-rings gives two ears of the whole ring. Two ears, one from each side, are not adjacent. (The ear x must also be
-strictly convex in the whole ring: its corner is the same corner as in the sub-ring.)
+Existence of a good vertex (the two ears theorem with the exact rule, for rings that may have collinear corners). Call a vertex of
+a simple ring good when its corner turn is zero, or when the corner is strictly convex and the closed triangle of the vertex and
+its two ring neighbours holds no other ring vertex (an ear in the sense of the rule). A zero-turn corner of a simple ring is never
+a fold, so the vertex lies strictly between its neighbours. Claim: a simple ring with three vertices has three good vertices (it
+has positive area, so all corners are strictly convex and no other vertex exists), and a simple ring with at least four vertices
+has two good vertices that are not adjacent. The claim covers rings with collinear corners, which is what the induction needs: a
+ring cut by a diagonal, or a ring with a clipped ear, can have a zero-turn corner at the diagonal ends. Proof by induction on the
+number of vertices n, n at least four.
+- Take the lowest-leftmost vertex v (smallest x, then smallest y), with neighbours a and b. Its turn is strictly convex: a zero
+  turn would put v strictly between a and b, and then one of them would come before v in that order. Let T be the closed triangle (a, v, b).
+- Case 1: no other ring vertex is in T. Then v is good. Clip v: the ring without v is simple (the new edge ab lies in T, which holds
+  no vertex, and no edge enters the open triangle without an end in it), it has n - 1 vertices, and its corners at a and b may now
+  be zero-turn. By the claim for n - 1 (the three vertex case or the induction), the new ring has a good vertex x that is not a
+  or b: with three vertices all are good, and with at least four the two good ones are not adjacent while a and b are adjacent.
+  The corner of x is unchanged. If it is an ear in the new ring, its closed triangle lies in the closed new ring, which meets T only
+  in the segment ab, and v is not on ab, so it is an ear of the old ring too. The vertices v and x are not adjacent.
+- Case 2: some other vertex is in T. Let u be one that is farthest from the line ab (ties: any). The triangle between v and the
+  parallel to ab through u holds no vertex other than on that parallel, and an edge cannot enter it without an end inside or
+  crossing the ring edges va and vb, so the open segment vu holds no vertex, touches no edge, and lies inside the polygon. It
+  splits the ring into two simple rings, each with fewer vertices and with v and u adjacent (their corners at v and u may be
+  zero-turn). Each ring has a good vertex x that is neither v nor u: with three vertices the third one, and with at least four the two
+  good vertices are not adjacent while v and u are. The corner of x is the same corner in the whole ring. If it is an ear in its
+  ring, no vertex of the other ring is in its closed triangle, because the other ring lies outside the closed region of this ring
+  except for the segment vu, which holds no vertex. So x is good in the whole ring. The two vertices found, one from each side, are
+  not adjacent in the whole ring.
+This establishes the claim for every simple ring, with or without collinear corners. The algorithm uses it only for a ring that has
+no zero-turn corner (see the next paragraph), where "good" means "ear". The tests add supporting evidence, described in the tests section.
+
 
 Termination and unreachability of the fallback. Every outer iteration of the loop removes at least one vertex: a pass either
 drops a vertex, clips an ear, or finds neither; in the last case no vertex is collinear (a collinear vertex would have been dropped),
-the ring is simple by the invariant, and the theorem above gives an ear, so the pass would have clipped it. Hence a pass with
+the ring is simple by the invariant, and the claim above gives a good vertex, which cannot be zero-turn and so is an ear, so the pass would have clipped it. Hence a pass with
 neither a drop nor an ear cannot happen for a simple polygon and the fallback branch is never taken. The ring has at least four vertices when the
 theorem is used; with three vertices left the corner turns all have sign `s` (the remaining area is positive), no other vertex
 exists, and the first visited vertex is an ear, so the loop finishes. The number of outer iterations is at most `n`, each costing at most a
@@ -168,3 +184,23 @@ Corpora (a 64-bit LCG with multiplier `6364136223846793005`, increment `14426950
 grid polygons and 300 grown simple polygons (random vertex insertion kept simple by `is_simple`, random winding and start index)
 have their `is_simple` flags, doubled areas and triangulations hashed together with the number of simple polygons, triangles and
 dropped vertices, as constants in the tests.
+
+Exhaustive 3x3 grid enumeration. The test walks every sequence of 3 to 7 distinct points of the 3x3 grid (504, 3024, 15120, 60480
+and 181440 sequences). Every start vertex and both windings occur, because a sequence and its reverse are both enumerated. For
+each sequence the module's `is_simple` must equal a brute-force simple test of the test file, and a non-simple one must return
+`BadPolygon`. For each simple polygon, `triangulate` must return `Ok`, the triangle count must equal `n - 2` minus the drops of
+the naive uncached reference, the triangles must equal that reference, the tiling check must pass (exact doubled-area sum), and the
+reference must report zero uses of the fallback. The totals per vertex count (simple polygons, counter-clockwise and clockwise
+halves, triangles, drops) are constants taken from an independent Python script:
+
+| Vertices | Simple polygons | Triangles | Dropped |
+| --- | --- | --- | --- |
+| 3 | 456 | 456 | 0 |
+| 4 | 1136 | 2176 | 96 |
+| 5 | 2400 | 6728 | 472 |
+| 6 | 3312 | 12176 | 1072 |
+| 7 | 2464 | 11112 | 1208 |
+
+Split: a build with a sanitizer (detected by the compiler macros) stops at 6 vertices to bound the run time; an uninstrumented
+build also runs 7 vertices. This enumeration is supporting evidence for the rule and the module on small inputs, not branch
+coverage. The fallback code itself is still not executed through the public functions.
