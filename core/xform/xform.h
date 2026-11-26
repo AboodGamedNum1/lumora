@@ -23,7 +23,8 @@ Affine scaling(float sx, float sy);
 // Rotation by `radians` counter-clockwise (y up): a = cos, b = sin, c = -sin, d = cos.
 // Own sin/cos, argument reduced exactly enough for |radians| <= 1e4 (documented max error); beyond that or NaN returns identity.
 Affine rotation(float radians);
-// Compose: result applies `rhs` first, then `lhs` (lhs * rhs). Computed in double, rounded once per entry.
+// Compose: result applies `rhs` first, then `lhs` (lhs * rhs). Each entry is evaluated in double with a fixed
+// left-to-right order of exact float products and sums (no FMA), then converted to float once. Documented in docs/xform.md.
 Affine multiply(const Affine& lhs, const Affine& rhs);
 Vec2 apply(const Affine& m, Vec2 p);
 Vec2 apply_vector(const Affine& m, Vec2 v);  // no translation
