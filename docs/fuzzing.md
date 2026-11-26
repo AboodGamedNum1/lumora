@@ -12,6 +12,8 @@ Lumora fuzzes every parser that reads untrusted input. The targets live in `tool
 | `fuzz_zip` | `read_zip_store`, then `load_package` when parsing works | `write_zip` / `read_zip_store` round trip on a `FileMap` built from the input; `load_package` must never accept a file that differs from `checksums.txt` |
 | `fuzz_inflate` | `inflate_raw` with a 64 KB output limit | `deflate_raw` / `inflate_raw` round trip at levels 1 and 6 |
 | `fuzz_ppm` | `decode_ppm` with a 256 pixel dimension limit | a decoded image is valid and survives `encode_ppm` / `decode_ppm` |
+| `fuzz_animclip` | `parse_clip_json` | accepted clips: every track passes `validate_track`, the clip duration is finite, and `sample_track` returns finite values at five times |
+| `fuzz_atlas` | `pack_atlas` and `atlas_index_json` on a few tiny images built from the input bytes, with small limits | accepted atlases: valid image inside the limits, entries inside the image and not overlapping, non-empty index; failures give an empty index |
 
 A failed invariant calls `std::abort()`, so it shows up as a crash.
 

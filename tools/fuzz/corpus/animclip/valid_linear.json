@@ -1,0 +1,1 @@
+{"name":"intro","tracks":[{"target":"layer/hills/position","components":2,"rotation":false,"interpolation":"linear","times":[0,1,2],"values":[0,0,10,5,20,0]}]}
