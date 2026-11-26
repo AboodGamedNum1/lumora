@@ -57,8 +57,7 @@ InsertResult cache_insert(GlyphCache* cache, const GlyphKey& key, std::uint32_t 
 // slots exist (an unused slot is never preferred then). Eviction candidates are used entries only (smallest last_used, lowest index on
 // a tie); if there is no used entry at all, slot 0 is replaced. Both cases return Evicted with evictions += 1 and leave count as it is.
 // An Inserted result adds 1 to count, never beyond kCapacity. Exact bookkeeping: a find hit changes tick (+1), that entry's last_used,
-// and hits; a find miss changes only misses (tick is untouched); insert never changes hits or misses; Updated changes tick and that
-// entry's last_used only; Inserted changes tick, count and the new entry; Evicted changes tick, evictions and the replaced entry.
+// and hits; a find miss changes only misses (tick is untouched); insert never changes hits or misses; Updated replaces that entry's value and changes tick and its last_used, nothing else (key, count and all three counters stay); Inserted changes tick, count and the new entry; Evicted changes tick, evictions and the replaced entry.
 // A saturated tick stays at UINT64_MAX and is stored as last_used, so equal last_used values are resolved by the lowest index.
 // cache_size returns the stored count as is (not recounted, not clamped). cache_digest never hashes count or tick.
 // cache_clear sets every entry to its default state: zero key, value and last_used, used false.
