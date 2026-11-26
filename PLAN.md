@@ -126,7 +126,8 @@ M1 carry-over (not exit criteria as written, still to do; SPIR-V to GLSL ES thro
 | Bitmap text layout (core/textlayout, M4 text groundwork) | merged (ea02ca1), CI-verified on Linux and Windows with golden digests asserted as constants; exact 64-bit layout decisions, saturating stores, 2^30 byte input cut (the cut itself is verified by a one-off local run, not in CI); software evidence only |
 | CPU polygon rasterizer (core/raster, M4 groundwork) | merged (b5a4951), CI-verified on Linux and Windows with golden digests asserted as constants; edge snapping and doubled-area rule documented; software evidence only |
 | CPU compositing and blur (core/composite, M4 post-FX groundwork) | merged, CI-verified on Linux and Windows with golden digests asserted as constants; premultiplied RGBA8 blend modes, masked fill, box blur with no allocation; the 2^47 address cutoff in the overlap check is argued in docs/composite.md but not exercised by a test; software evidence only |
-| CPU integer noise (core/noise, M4 procedural groundwork) | interface and stubs on main; implementation not started (contributor scope Q); not CI-verified yet |
+| CPU integer noise (core/noise, M4 procedural groundwork) | merged (488e785), CI-verified on Linux and Windows with golden digests asserted as constants; exact multiword fade, 2D and 3D value and gradient noise, 3 x 3 cellular (not always the true nearest point), fBm; software evidence only |
+| CPU image resampling and mips (core/resample, M4 texture groundwork) | interface and stubs on main; implementation not started (contributor scope R); not CI-verified yet |
 | Fuzz targets for atlas and animation parsing | not started |
 
 ## 6b. MW: Windows desktop runtime (planned)
