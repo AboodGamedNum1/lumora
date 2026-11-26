@@ -73,8 +73,13 @@ struct BatchResult {
 // 4. Vertices per sprite in order: (0,0), (size.x,0), (size.x,size.y), (0,size.y) transformed by the sprite matrix
 //    in double and rounded once to float; uv corners map (min_x,min_y), (max_x,min_y), (max_x,max_y), (min_x,max_y).
 //    Indices: base+0, base+1, base+2, base+0, base+2, base+3.
-// 5. Merge consecutive sprites with equal (texture, blend) into one DrawBatch.
-// Capacities are element counts. Required: 4 * drawn vertices, 6 * drawn indices, batches <= drawn.
+// 5. Merge consecutive sprites with equal (texture, blend) into one DrawBatch, in final output order, also across
+//    layer boundaries (a batch carries no layer).
+// Capacities are element counts. Required: 4 per drawn sprite (vertices), 6 per drawn sprite (indices) and exactly the
+// merged batch count (batches). Validation order: TooManySprites, first BadSprite, BadViewBounds (checked whenever `cull`
+// is not null, even if nothing is culled), then BufferTooSmall. sprites == nullptr is allowed only when count == 0.
+// On BufferTooSmall nothing is written but the result carries the required counts. After an earlier failure all counts
+// are 0. An output pointer may be null only when its required count is 0; otherwise the result is BufferTooSmall.
 BatchResult build_batches(const Sprite* sprites, std::size_t count, const Rect* cull, Vertex* out_vertices,
                           std::size_t vertex_capacity, std::uint32_t* out_indices, std::size_t index_capacity,
                           DrawBatch* out_batches, std::size_t batch_capacity);
