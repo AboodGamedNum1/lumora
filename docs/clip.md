@@ -147,3 +147,38 @@ The sanitizer-safe performance test clips a 4096-point random polygon, a 4096-po
 in-file reference, in a few milliseconds (about 1 ms for the whole test case with the code compiled -O2 uninstrumented, about 4 ms with ASan+UBSan at -O0). Each stage is
 linear in its input size, so a polygon clip is linear in the point count (at most `polygon_bound(n)` points of work in the
 last stage).
+
+## Mutation checks (local)
+
+The module was mutated by hand ten times, each a single changed operation, and the test binary was rerun. The tests failed on 8 and 2
+survived. The 8 caught mutants:
+- `floor_div`: the decrement `if (a % b < 0) --q;` removed (truncation instead of floor).
+- `round_ratio`: the numerator `2 * d * t + m` changed to `2 * d * t + m - 1` (ties round down).
+- `clip_polyline`: the joint test compares only `x` of the previous clipped end and the clipped start.
+- `clip_polygon`: stage 2 and stage 4 swapped (top edge before bottom edge).
+- `stage`: the closed inside test `v >= c` made open (`v > c`) for the left and bottom edges.
+- `polygon_bound`: `+ 1` added to the result.
+- `clip_segment_raw`: `if (frac_less(tl, te)) return false;` made to reject equal parameters too (one-point touch invisible).
+- `clip_polyline`: `max_pts` changed from `2 * (point_count - 1)` to one less.
+
+The 2 surviving mutants cannot be told apart from the real code by any call of the public API, so no test can kill them.
+- Survivor one, in `clip_polygon`, the overlap extents: the fourth entry `{out_count, sizeof(u32)}` changed to `{out_count, 1}` (a
+  one byte counter range instead of four). A valid `std::uint32_t*` is 4-byte aligned, every other range starts at a `Point`
+  (alignment 4) and has a length that is a multiple of 4 (a multiple of 8 for point ranges). For a counter address `c` and a range
+  `[s, s + L)` with `c`, `s` and `L` multiples of 4, `[c, c + 4)` meets the range exactly when `c` is in `[s, s + L)`, which is also
+  what `[c, c + 1)` tests; and `c + 4 <= s` holds exactly when `c + 1 <= s`. The modular rule only clears the top byte and compares
+  the differences, so it keeps the low bits and the cutoff test is the same for both lengths. A misaligned counter would be undefined
+  behaviour at the store and is not a valid call.
+- Survivor two, in `clip_polygon`, the scratch layout: `Point* const second = scratch + g3;` changed to `scratch + g3 - 1` (the
+  second region starts one point earlier, so it can share one point with the end of the first region). Write `n1`, `n2`, `n3` for the
+  sizes after stages 1, 2, 3. Then `n1 <= g(n) < g(g(g(n))) = g3`, so `n1 <= g3 - 1`: stage 1 fills only `[0, g3 - 1)` of the first
+  region, and stage 2 (reading the first region, writing the second) never writes a point stage 2 still reads. Stage 3 reads the second
+  region `scratch[g3 - 1 + j]`, `0 <= j < n2`, and writes `scratch[w]` for output indices `w < n3`, with `n3 <= g(n2) <= g(g(g(n))) = g3`
+  because `g` is monotone and `n2 <= g(g(n))`. So the only second-region point a write can reach is `j = 0` at `w = g3 - 1`, which needs
+  `n3 = g3`. Output index `g3 - 1` is written by edge `i` only when `2 * (i + 1) >= g3`, so `i >= 4` (`g3 >= 9` for `n >= 3`), while
+  `second[0]` is read only by edges 0 and 1 (as the current point and as the previous point); a point is also copied before the write
+  of the same statement. Stage 4 reads only the first region. So every read sees the same value as with the real layout, the output is
+  identical, and the second region ends at `g3 - 1 + g2 < scratch_size`, inside the scratch.
+
+The `2^47` cutoff of the overlap rule (answer "no overlap" for two addresses `2^47` bytes apart or more) is argued, not exercised: it
+cannot be reached with real buffers, and no test or mutation covers it.
