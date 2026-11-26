@@ -6,6 +6,8 @@
 
 namespace lumora::prng {
 
+constexpr std::uint32_t kMaxDraws = 64;  // most outputs one pcg32_bounded call consumes
+
 struct Pcg32 {
   std::uint64_t state = 0;
   std::uint64_t inc = 1;  // stream selector, always odd after pcg32_seed
@@ -33,5 +35,14 @@ std::uint32_t pcg32_bounded(Pcg32* rng, std::uint32_t bound);
 // delta steps; delta may be any uint64 (including 0, which changes nothing), and the arithmetic wraps modulo 2^64 so a delta of 2^64 - 1
 // steps the generator back by one. Returns false and changes nothing when rng is null.
 bool pcg32_advance(Pcg32* rng, std::uint64_t delta);
+
+// Decisions: the output is computed from the old state, before stepping. pcg32_seed overwrites both fields; the top bit of initseq is lost
+// on purpose in (initseq << 1). pcg32_bounded draws at most kMaxDraws = 64 outputs: if all 64 are below the threshold (impossible in
+// practice for a seeded stream, since each draw is rejected with probability below 1/2, so 64 in a row is below 2^-64, but certain for a
+// forged state such as state 0 with inc 0 that emits 0 forever) it stops and returns the 64th output % bound, having consumed exactly 64
+// outputs. This keeps the function terminating for every state. Tests must check the exact state after every bounded call, including the
+// rejection path. pcg32_advance with delta 2^64 - 1 steps a seeded stream (odd inc) back by one exactly; for a forged even inc it is
+// still defined as delta applications of the step (affine composition modulo 2^64), nothing more. inc is never changed by advance. No
+// aliasing and no thread-safety promise is made or tested.
 
 }  // namespace lumora::prng
