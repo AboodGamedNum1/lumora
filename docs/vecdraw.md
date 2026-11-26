@@ -147,7 +147,7 @@ its own FNV and generators. The cases are:
   points with square caps, clipping, and a path covering the whole target;
 - extreme coordinates: the exact `+-2^24` vertex boundary for stroke (accepted, and one unit over rejected), a square cap, a miter tip,
   a contour of 1024 points (accepted) and 1025 points (stroke rejected, fill accepted), closed variants, TooManyPoints before BadPoint, and
-  4095, 4096 and 4097 stroke contours with the fill of the 4097 case accepted, plus BadPoint beating the contour count in one contour;
+  4095, 4096 and 4097 stroke contours with the fill of the 4097 case accepted, BadPoint beating the contour count in one contour, and three closed loops of about 1000 points where one loop has a vertex out of range in y only (or x only), first or second, which must give BadPoint although the later loops exceed 4096 contours (the same three loops without the bad vertex give TooManyContours);
 - an exhaustive sweep of all command sequences of length 1 to 3 over the five ops with three point presets and four modes (14460 runs,
   2460 successes, the rest are path errors);
 - three random corpora (seeds 0xA1, 0xB2, 0xC3) with status counts and digests;
@@ -162,7 +162,8 @@ its own FNV and generators. The cases are:
   fill contour clears the mask;
 - every successful mask is also compared with an oracle that calls the three public APIs in sequence on `std::vector` storage.
 
-A mutation run over the module (55 mutants of checks, limits, layout sizes, copies and the check order) was caught except: the
-overlap `2^47` cutoff (not reachable with real buffers, argued above); a stroke vertex check that looks at x only, which is equivalent
-because the rasteriser reports the same `BadPoint` with the target untouched (the preflight matters for the order against
-`TooManyContours`, which a named test covers); a comment-only edit; and the status mapping of an unreachable rasteriser `BadPoint`.
+A mutation run over the module (56 mutants of checks, limits, layout sizes, copies and the check order) was caught except: the
+overlap `2^47` cutoff (not reachable with real buffers, argued above); a comment-only edit; and the status mapping of an unreachable
+rasteriser `BadPoint`. The vertex preflight is not redundant: a version that checks only x, only y, or nothing is caught by the three-loop
+cases, where a contour with a single out-of-range coordinate comes before contours that push the running total over 4096. Without the
+preflight the stroke would reach `TooManyContours` first, since the rasteriser only sees the vertices after the whole stroke outline is kept.
