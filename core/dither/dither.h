@@ -23,6 +23,9 @@ std::uint8_t quantize_u16(std::uint16_t v, std::uint32_t x, std::uint32_t y);
 // Quantizes count values of one row: dst[i] = quantize_u16(src[i], x0 + i, y), with x0 + i computed modulo 2^32. count 0 returns true
 // and touches nothing, whatever the pointers. Returns false and writes nothing when count > kMaxRow, when src or dst is null with
 // count > 0, or when the byte ranges of src (2 * count bytes) and dst (count bytes) overlap. Otherwise writes count bytes, returns true.
+// Check order: count 0 first (true, nothing touched), then count > kMaxRow, then null pointers, then overlap; every failure writes
+// nothing. Overlap uses the half-open byte ranges [src, src + 2 * count) and [dst, dst + count) compared as uintptr_t addresses: ranges
+// that only touch do not overlap, identical addresses with count > 0 do. No alignment check on src. y may be any uint32 (low 3 bits used).
 bool dither_row_u16(const std::uint16_t* src, std::uint8_t* dst, std::uint32_t count, std::uint32_t x0, std::uint32_t y);
 
 }  // namespace lumora::dither
