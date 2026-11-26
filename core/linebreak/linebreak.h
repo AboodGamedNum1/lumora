@@ -38,6 +38,11 @@ enum class BreakResult : std::uint8_t { Ok = 0, NullArgument = 1, BadWidth = 2, 
 //    max_width) the glyph is added alone and the line ends after j.
 // The last line ends at count - 1. A line that ends at a Space or Newline keeps that item as its last item, and a following line may
 // start with another Space (no trimming).
+// Decisions: a final Newline ends the last non-empty line and no trailing empty line is emitted (so "ab\n" is one line, and a run of only
+// Newline items gives one line per Newline). Every failure, OutputFull included, leaves line_starts and *line_count untouched (count the
+// lines first, then write). Capacity 0 succeeds only for count 0; otherwise it is OutputFull. Space advances are added with no width check
+// and count toward `used` of later Glyph items; a Glyph that does not fit may wrap after the latest Space of the current line. A Newline's
+// advance is never counted. After a wrap the items after the break index are re-examined from the new line start with a fresh `used`.
 BreakResult break_lines(const Item* items, std::uint32_t count, std::int32_t max_width, std::uint32_t* line_starts,
                         std::uint32_t capacity, std::uint32_t* line_count);
 
