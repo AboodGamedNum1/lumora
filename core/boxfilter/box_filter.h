@@ -23,6 +23,9 @@ enum class FilterResult : std::uint8_t { Ok = 0, NullArgument = 1, BadSize = 2, 
 // out_w * f) with the destination span [dst, dst + (out_h - 1) * dst_stride + out_w); any intersection is Overlap and spans that only
 // touch are allowed. On Ok exactly out_w bytes of each of the out_h rows of dst are written (the stride padding is not touched),
 // *out_w and *out_h are set, and the result is Ok.
+// Aliasing: no promise is made, and nothing is checked or tested, about out_w or out_h pointing into the src or dst buffers or at each
+// other; callers pass distinct objects. Under that contract the moment *out_w and *out_h are stored (before or after the pixel loops, as
+// long as it is on the Ok path only) cannot be observed.
 FilterResult box_downscale(const std::uint8_t* src, std::uint32_t w, std::uint32_t h, std::uint32_t src_stride, std::uint32_t factor,
                            std::uint8_t* dst, std::uint32_t dst_stride, std::uint32_t* out_w, std::uint32_t* out_h);
 
