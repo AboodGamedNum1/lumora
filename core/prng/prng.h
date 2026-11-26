@@ -26,9 +26,11 @@ bool pcg32_seed(Pcg32* rng, std::uint64_t initstate, std::uint64_t initseq);
 // Returns the next 32-bit output and advances one step. A null rng returns 0. A hand-built even inc is used as stored (no repair).
 std::uint32_t pcg32_next(Pcg32* rng);
 
-// Uniform value in [0, bound) without modulo bias: threshold = (0 - bound) % bound in uint32 arithmetic; draw outputs with pcg32_next
-// until one is >= threshold, return that output % bound. bound 0 returns 0 and does not advance; bound 1 returns 0 after consuming one
-// output (threshold is 0, so the first draw is accepted). A null rng returns 0.
+// Value in [0, bound) by capped rejection sampling with a biased fallback: threshold = (0 - bound) % bound in uint32 arithmetic; draw
+// outputs with pcg32_next until one is >= threshold and return that output % bound (unbiased when it happens, which is the case for the
+// first draw whenever threshold is 0, for example bounds 1, 2, 4, 8). At most kMaxDraws outputs are drawn; if all are below the threshold
+// the 64th output % bound is returned (this fallback can be biased). bound 0 returns 0 and does not advance; bound 1 returns 0 after
+// consuming one output. A null rng returns 0.
 std::uint32_t pcg32_bounded(Pcg32* rng, std::uint32_t bound);
 
 // Jumps ahead: afterwards the state equals the state after delta calls of pcg32_next (outputs discarded), computed in O(64) steps, not
@@ -37,10 +39,11 @@ std::uint32_t pcg32_bounded(Pcg32* rng, std::uint32_t bound);
 bool pcg32_advance(Pcg32* rng, std::uint64_t delta);
 
 // Decisions: the output is computed from the old state, before stepping. pcg32_seed overwrites both fields; the top bit of initseq is lost
-// on purpose in (initseq << 1). pcg32_bounded draws at most kMaxDraws = 64 outputs: if all 64 are below the threshold (impossible in
-// practice for a seeded stream, since each draw is rejected with probability below 1/2, so 64 in a row is below 2^-64, but certain for a
-// forged state such as state 0 with inc 0 that emits 0 forever) it stops and returns the 64th output % bound, having consumed exactly 64
-// outputs. This keeps the function terminating for every state. Tests must check the exact state after every bounded call, including the
+// on purpose in (initseq << 1). pcg32_bounded draws at most kMaxDraws = 64 outputs: if all 64 are below the threshold it stops and returns the 64th
+// output % bound, having consumed exactly 64 outputs. No probability bound is claimed for reaching the cap with a seeded stream (the
+// outputs of a deterministic generator are not proven to be independent draws); it is not expected in practice. A forged state such as
+// state 0 with inc 0 (output 0 forever) reaches the cap for every bound with a positive threshold (for example 3, 5 or 0x80000001) and
+// never for a bound with threshold 0 (1, 2, 4, 8, ...), which accepts the first output. This keeps the function terminating for every state. Tests must check the exact state after every bounded call, including the
 // rejection path. pcg32_advance with delta 2^64 - 1 steps a seeded stream (odd inc) back by one exactly; for a forged even inc it is
 // still defined as delta applications of the step (affine composition modulo 2^64), nothing more. inc is never changed by advance. No
 // aliasing and no thread-safety promise is made or tested.
