@@ -79,7 +79,9 @@ struct ZipAuditResult {
 //      would fit the ordinary field (canonical form is value >= sentinel), or any disagreement between the two
 //      records is Zip64Mismatch. Versions are not checked.
 //   4. TooManyEntries (count from the end record, directories included), then central directory bounds: it must
-//      end exactly where the ZIP64 record (or end record) starts, and hold exactly the declared count.
+//      end exactly where the ZIP64 record (or end record) starts (declared start plus size, in uint64, equal to
+//      that position; any other value, overflow or a range outside the buffer is CentralDirectoryBounds), and hold
+//      exactly the declared count. Where the directory starts relative to the last entry data is step 8.
 //   5. Per central entry, in order: header fields and limits (BadCentralHeader, empty name included), then
 //      Encrypted (bits 0, 6, 13), UnsupportedFeature (bit 3 and every bit except 0, 1, 2, 6, 11, 13; bits 1 and 2
 //      only with method 8), UnsupportedMethod, SpecialFile (Unix mode type only when version-made-by OS is 3;
@@ -89,7 +91,7 @@ struct ZipAuditResult {
 //      Zip64Mismatch (central) or BadLocalHeader (local). Other extra content is not interpreted.
 //   6. Local header at the recorded offset: BadLocalHeader, then HeaderMismatch for any difference in name,
 //      flags, method, CRC, sizes, modification time or date. Extras may differ.
-//   7. Sizes (BadSizes): stored needs equal sizes; deflate with 0 compressed bytes is BadSizes; sums and
+//   7. Sizes (BadSizes, reported at the local header offset): stored needs equal sizes; deflate with 0 compressed bytes is BadSizes; sums and
 //      endpoints are checked in uint64, a wrap or a data end beyond the buffer is BadSizes at that entry.
 //   8. Layout in central order: first offset not 0 is PrependedData; then per entry: offset not above the
 //      previous one is OutOfOrder, below the previous data end is Overlap, above it is Gap; data reaching into
