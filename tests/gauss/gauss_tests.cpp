@@ -45,6 +45,8 @@ const u64 kBinarySystems = 0xC920C9059FDC6CEBull;
 const u64 kGrid2x2 = 0xE4F4DE2C6C6AED5Eull;
 const u64 kGrid2x3 = 0xBC1F53D13E85A0DCull;
 const u64 kTernary3x3 = 0x4424C53790CC7485ull;
+const u64 kTernaryShapes = 0x3073ABB9936C6A34ull;
+const u64 kTernarySystems = 0x6221D47761B63DA1ull;
 const Case kCases[] = {
     {1u, 1u, 0u, 0u, 0u, 0u, 9000ull, 0xB1226A5CDCC37651ull},
     {1u, 1u, 0u, 0u, 1u, 0u, 9001ull, 0x923C6627B403E916ull},
@@ -1328,7 +1330,7 @@ TEST_CASE("gauss exhaustive extent four residues 2x3 systems", "[gauss]") {
   CHECK(h == kGrid2x3);
 }
 
-TEST_CASE("gauss exhaustive extent ternary 3x3 det and rank", "[gauss]") {
+TEST_CASE("gauss exhaustive extent residues 0 1 and p minus 1 3x3 det and rank", "[gauss]") {
   const u32 v[3] = {0u, 1u, kMod - 1u};
   u64 h = kFnvOff;
   bool ok = true;
@@ -1348,6 +1350,77 @@ TEST_CASE("gauss exhaustive extent ternary 3x3 det and rank", "[gauss]") {
   }
   CHECK(ok);
   CHECK(h == kTernary3x3);
+}
+
+TEST_CASE("gauss exhaustive extent ternary 0 1 2 every shape rows cols 1 to 3 rank and square det", "[gauss]") {
+  u64 h = kFnvOff;
+  bool ok = true;
+  u64 count = 0;
+  for (u32 rows = 1; rows <= 3; ++rows) {
+    for (u32 cols = 1; cols <= 3; ++cols) {
+      u64 total = 1;
+      for (u32 k = 0; k < rows * cols; ++k) total *= 3u;
+      for (u64 idx = 0; idx < total; ++idx) {
+        std::vector<u32> a(static_cast<std::size_t>(rows) * cols);
+        u64 t = idx;
+        for (std::size_t k = 0; k < a.size(); ++k) {
+          a[k] = static_cast<u32>(t % 3u);
+          t /= 3u;
+        }
+        const RankOut r = run_rank(a, rows, cols, static_cast<u32>(idx % 2u), static_cast<u32>(idx * 31u));
+        ok = ok && r.res == GaussResult::Ok && r.clean && r.rank == rank_minors(a, rows, cols, cols);
+        if (rows == cols) {
+          const DetOut d = run_det(a, rows, static_cast<u32>((idx + 1u) % 2u), static_cast<u32>(idx * 37u));
+          ok = ok && d.res == GaussResult::Ok && d.clean && d.det == det_leibniz(a, rows);
+          h = fold_bytes(h, d.det, 4);
+        }
+        h = fold_bytes(h, r.rank, 4);
+        ++count;
+      }
+    }
+  }
+  CHECK(count == 21297u);
+  CHECK(ok);
+  CHECK(h == kTernaryShapes);
+}
+
+TEST_CASE("gauss exhaustive extent ternary 0 1 2 systems rows 1 to 2 cols 1 to 3", "[gauss]") {
+  u64 h = kFnvOff;
+  bool ok = true;
+  u64 count = 0;
+  for (u32 rows = 1; rows <= 2; ++rows) {
+    for (u32 cols = 1; cols <= 3; ++cols) {
+      u64 total = 1;
+      for (u32 k = 0; k < rows * cols + rows; ++k) total *= 3u;
+      for (u64 idx = 0; idx < total; ++idx) {
+        Sys s;
+        s.rows = rows;
+        s.cols = cols;
+        s.a.resize(static_cast<std::size_t>(rows) * cols);
+        s.b.resize(rows);
+        u64 t = idx;
+        for (std::size_t k = 0; k < s.a.size(); ++k) {
+          s.a[k] = static_cast<u32>(t % 3u);
+          t /= 3u;
+        }
+        for (u32 i = 0; i < rows; ++i) {
+          s.b[i] = static_cast<u32>(t % 3u);
+          t /= 3u;
+        }
+        const SolveOut o = run_solve(s, static_cast<u32>(idx % 2u), static_cast<u32>(idx * 41u));
+        ok = ok && o.res == GaussResult::Ok && o.clean && brute_solve_ok(s, o);
+        h = fold_bytes(h, static_cast<u32>(o.kind), 1);
+        h = fold_bytes(h, o.rank, 4);
+        if (o.kind != SolveKind::Inconsistent) {
+          for (u32 j = 0; j < cols; ++j) h = fold_bytes(h, o.x[j], 4);
+        }
+        ++count;
+      }
+    }
+  }
+  CHECK(count == 7488u);
+  CHECK(ok);
+  CHECK(h == kTernarySystems);
 }
 
 // One table case: rank, det (square only) and solve, against the digest and (small sizes) the brute force or the construction.

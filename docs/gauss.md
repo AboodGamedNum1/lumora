@@ -23,7 +23,7 @@ Ranges: stored values stay below `kMod`; a product is below `(kMod - 1)^2 < 2^60
 
 ## Tests
 
-Expected results come from `tools/gauss_ref.py`, which uses four independent methods: Leibniz expansion and minors (small sizes), Bareiss fraction free elimination in Python integers, a separate Python Gauss-Jordan, and a construction `A = P L E U` with known rank, determinant and solutions. They are cross-checked while the data is generated and a disagreement aborts. The goldens are FNV-1a digests over the complete outputs. `python3 tools/gauss_ref.py check` runs the cross-checks without printing and took about 22 s on the machine used (local, one core, not a timing assertion; no test asserts time). Full generation took about 44 s.
+Expected results come from `tools/gauss_ref.py`, which uses four independent methods: Leibniz expansion and minors (small sizes), Bareiss fraction free elimination in Python integers, a separate Python Gauss-Jordan, and a construction `A = P L E U` with known rank, determinant and solutions. They are cross-checked while the data is generated and a disagreement aborts. The goldens are FNV-1a digests over the complete outputs. `python3 tools/gauss_ref.py check` runs the cross-checks without printing and took about 22 s on the machine used (local, one core, not a timing assertion; no test asserts time). Generating the data file takes about the same.
 
 Every success run uses scratch of exactly the required size at an odd u32 offset with guard words, a garbage fill, and sentinel fills on outputs. No test asserts scratch contents after a call.
 
@@ -31,9 +31,11 @@ Extents, exactly as named in the tests:
 - `gauss exhaustive extent binary square n 1 to 4 det and rank`: every 0/1 matrix of size 1 to 4 (exhaustive for these matrices only).
 - `gauss exhaustive extent binary rank rows cols 1 to 4`: every 0/1 matrix with `rows, cols` from 1 to 4 (rank).
 - `gauss exhaustive extent binary systems rows cols 1 to 3`: every 0/1 system `a`, `b` with `rows, cols` from 1 to 3.
-- `gauss exhaustive extent four residues 2x2 det and rank`: all 2x2 matrices over `{0, 1, 2, 998244352}`.
-- `gauss exhaustive extent four residues 2x3 systems`: all 2x3 systems (`a` 2x3 plus `b`) over the same four residues.
-- `gauss exhaustive extent ternary 3x3 det and rank`: all 3x3 matrices over `{0, 1, 2}`.
+- `gauss exhaustive extent four residues 2x2 det and rank`: all 4^4 = 256 matrices over `{0, 1, 2, 998244352}`.
+- `gauss exhaustive extent four residues 2x3 systems`: all 4^8 = 65536 systems (`a` 2x3 plus `b`) over the same four residues.
+- `gauss exhaustive extent residues 0 1 and p minus 1 3x3 det and rank`: all 3^9 = 19683 matrices of size 3x3 over `{0, 1, 998244352}` (`p` = `kMod`; this one is not the set `{0, 1, 2}`).
+- `gauss exhaustive extent ternary 0 1 2 every shape rows cols 1 to 3 rank and square det`: every matrix over `{0, 1, 2}` for every shape `rows, cols` from 1 to 3, 21297 matrices in total (3, 9, 27, 9, 81, 729, 27, 729, 19683 for the nine shapes). Rank for all of them, determinant for the 19767 square ones (3 + 81 + 19683).
+- `gauss exhaustive extent ternary 0 1 2 systems rows 1 to 2 cols 1 to 3`: every system with `a` over `{0, 1, 2}` and `b` over `{0, 1, 2}`, `rows` 1 to 2 and `cols` 1 to 3, 7488 systems in total (9, 27, 81, 81, 729, 6561 for the six shapes). The test asserts both counts.
 - `gauss scratch words exhaustive extent rows cols 0 to 6 both flags`.
 - Table cases (757, sampled, not exhaustive): 585 random and 172 constructed with known answers; 736 with sizes up to 100 (test `gauss table cases random and constructed up to 100 x 100`) and 21 with `rows` or `cols` from 128 to 256 (test `gauss large table cases 128 to 256 rows and columns`).
 - `gauss row order does not change the answer extent all row permutations of 5 systems`: every row permutation of five systems gives the same canonical answer.
@@ -41,10 +43,10 @@ Extents, exactly as named in the tests:
 
 ## Mutation testing
 
-132 source mutants of `core/gauss/gauss.cpp` (script outside the repo), built with ASan + UBSan and run against the final tests. Staged run, disclosed: each mutant first ran every test case except the large ones; a mutant that passed that stage then ran the large cases alone. A mutant is called killed by the first failure. Early in the work three mutants had an ambiguous pattern (sw_and, sw_ger, sw_gec); they were rewritten and are killed. The test file was edited once after a complete run (a comment-only change); the whole set was then run again from scratch on the final file, and the numbers here are from that rerun.
+132 source mutants of `core/gauss/gauss.cpp` (script outside the repo), built with ASan + UBSan and run against the final tests (this file's test list, 21 test cases). Staged run, disclosed: each mutant first ran every test case except the large ones; a mutant that passed that stage then ran the large cases alone. A mutant is called killed by the first failure. Early in the work three mutants had an ambiguous pattern (sw_and, sw_ger, sw_gec); they were rewritten and are killed. The test file was edited after earlier complete runs (comment edit, then the two ternary extents added at review); the whole set was run again from scratch on the final file, and the numbers here are from that last run only.
 
-- 98 killed by a failed assertion.
-- 22 crash-only (no failed assertion, killed by a sanitizer or abort): red_sw, sw_null, det_null, det_and, det_a, det_s, det_n1, rk_null, rk_nulls, rk_nulla, rk_nulls2, sv_null1, sv_null2, sv_null3, sv_a3, sv_bs, sv_b, sv_s, sv_bs0, sv_x, sv_copy_a, sv_xc.
+- 97 killed by a failed assertion.
+- 23 crash-only (no failed assertion, killed by a sanitizer or abort): red_skip, red_rank2, sw_null, det_null, det_and, det_a, det_s, det_n1, rk_null, rk_nulls, rk_nulla, rk_nulls2, sv_null1, sv_null2, sv_null3, sv_a3, sv_bs, sv_b, sv_s, sv_bs0, sv_x, sv_copy_a, sv_xc.
 - 0 timeouts.
 - 12 not killed (survivors), argued:
   - red_and, red_le: `rank < rows` removed or loosened. At `rank = rows` the pivot search starts at `p = rows` and takes the `continue` path. Equivalent.

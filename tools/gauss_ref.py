@@ -477,6 +477,7 @@ def grp_grid_2x3_systems():
 
 
 def grp_ternary_3x3():
+    """All 3x3 matrices over {0, 1, p - 1} (not {0, 1, 2})."""
     h = FNV_OFF
     V = (0, 1, P - 1)
     for idx in range(3 ** 9):
@@ -489,10 +490,41 @@ def grp_ternary_3x3():
     return h
 
 
+def grp_ternary_shapes():
+    """Every matrix over {0, 1, 2} for every shape rows, cols from 1 to 3: rank, and det for square shapes."""
+    h = FNV_OFF
+    for rows in range(1, 4):
+        for cols in range(1, 4):
+            for idx in range(3 ** (rows * cols)):
+                a = [[(idx // 3 ** (i * cols + j)) % 3 for j in range(cols)] for i in range(rows)]
+                rank, det, _, _ = py_gauss(a, [0] * rows, rows, cols)
+                if idx % 5 == 0:
+                    assert rank == rank_minors(a, rows, cols)
+                    if rows == cols:
+                        assert det == det_leibniz(a)
+                if rows == cols:
+                    h = fold(h, det, 4)
+                h = fold(h, rank, 4)
+    return h
+
+
+def grp_ternary_systems():
+    """Every system (matrix over {0, 1, 2}, right side over {0, 1, 2}) with rows 1 to 2 and cols 1 to 3."""
+    h = FNV_OFF
+    for rows in range(1, 3):
+        for cols in range(1, 4):
+            for idx in range(3 ** (rows * cols + rows)):
+                a = [[(idx // 3 ** (i * cols + j)) % 3 for j in range(cols)] for i in range(rows)]
+                b = [(idx // 3 ** (rows * cols + i)) % 3 for i in range(rows)]
+                h = solve_fold(h, a, b, rows, cols, check_small=(idx % 8 == 0))
+    return h
+
+
 def main():
     check = len(sys.argv) > 1 and sys.argv[1] == 'check'
     groups = [("kBinarySquare", grp_binary_square), ("kBinaryRank", grp_binary_rank), ("kBinarySystems", grp_binary_systems),
-              ("kGrid2x2", grp_grid_2x2), ("kGrid2x3", grp_grid_2x3_systems), ("kTernary3x3", grp_ternary_3x3)]
+              ("kGrid2x2", grp_grid_2x2), ("kGrid2x3", grp_grid_2x3_systems), ("kTernary3x3", grp_ternary_3x3),
+              ("kTernaryShapes", grp_ternary_shapes), ("kTernarySystems", grp_ternary_systems)]
     gd = [(n, f()) for n, f in groups]
     rows = []
     for c in cases():
