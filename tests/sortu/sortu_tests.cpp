@@ -89,6 +89,14 @@ u32 dirty_stack(u32 salt) {
   return block[salt & 4095u];
 }
 
+// Fills about 64 KiB of stack with the value 3 in a function that is never inlined, so the frames of the sort that runs next
+// sit on top of it. See the stale-entry tests.
+__attribute__((noinline)) u32 fill_stack_with_three() {
+  volatile u32 block[16384];
+  for (u32 i = 0; i < 16384; ++i) block[i] = 3u;
+  return block[7];
+}
+
 }  // namespace
 
 TEST_CASE("sortu: scenarios match the independent reference") {
@@ -371,5 +379,31 @@ TEST_CASE("sortu: the count table is cleared on every call") {
     dirty_stack(salt * 3u);
     REQUIRE(radix_sort_u32(k1.data(), n, s1.data()) == SortResult::Ok);
     REQUIRE(k1 == ek);
+  }
+}
+
+TEST_CASE("sortu: a stale count entry 255 does not skip the low-byte pass") {
+  // Four keys; the first has low byte 0xFF, the others have other low bytes and are unsorted. A count table whose entry 255 was not
+  // cleared and still holds 3 would read 1 + 3 = 4 = n for the first key's byte and wrongly skip the pass.
+  const u32 in[4] = {0x000000FFu, 0x00000003u, 0x00000001u, 0x00000002u};
+  const u32 vin[4] = {10u, 11u, 12u, 13u};
+  const u32 ek[4] = {1u, 2u, 3u, 0xFFu};
+  const u32 ev[4] = {12u, 13u, 11u, 10u};
+  SECTION("keys") {
+    std::vector<u32> k(in, in + 4), s(4, 0xCCCCCCCCu);
+    fill_stack_with_three();
+    const SortResult r = radix_sort_u32(k.data(), 4, s.data());  // called before any REQUIRE, whose handler would reuse the stack
+    REQUIRE(r == SortResult::Ok);
+    for (u32 i = 0; i < 4; ++i) REQUIRE(k[i] == ek[i]);
+  }
+  SECTION("pairs") {
+    std::vector<u32> k(in, in + 4), v(vin, vin + 4), sk(4, 0xAAAAAAAAu), sv(4, 0xBBBBBBBBu);
+    fill_stack_with_three();
+    const SortResult r = radix_sort_pairs_u32(k.data(), v.data(), 4, sk.data(), sv.data());
+    REQUIRE(r == SortResult::Ok);
+    for (u32 i = 0; i < 4; ++i) {
+      REQUIRE(k[i] == ek[i]);
+      REQUIRE(v[i] == ev[i]);
+    }
   }
 }
