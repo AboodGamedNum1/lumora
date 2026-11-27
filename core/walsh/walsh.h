@@ -25,7 +25,8 @@ WalshResult subset_mobius(std::uint32_t* a, std::uint32_t k);
 // xor_convolve: out[s] = sum over all pairs (t, u) with t xor u == s of a[t] * b[u], modulo kMod, for s = 0 .. 2^k - 1. a and b are not modified. out holds
 // 2^k entries; scratch holds scratch_words u32 words of working memory with unspecified contents afterwards; 2^k words always suffice and the method must
 // work inside them. Check order: a null among a, b, out and scratch gives NullArgument; then k above kMaxK gives TooLarge; then scratch_words below 2^k
-// gives ScratchTooSmall; then any entry of a, then any entry of b, at kMod or more gives ValueOutOfRange. Nothing is written on any failure. out, scratch,
+// gives ScratchTooSmall; then any entry of a, then any entry of b, at kMod or more gives ValueOutOfRange. Nothing is written on any failure: out AND scratch
+// keep their previous contents (every check comes before the first write). out, scratch,
 // a and b do not overlap (outside the contract, not tested).
 WalshResult xor_convolve(const std::uint32_t* a, const std::uint32_t* b, std::uint32_t k, std::uint32_t* scratch, std::uint32_t scratch_words,
                          std::uint32_t* out);
