@@ -4,7 +4,10 @@
 namespace lumora::palin {
 
 PalinResult palin_radii(std::uint32_t, const std::uint8_t*, std::uint32_t*, std::uint32_t*) { return PalinResult::NullArgument; }
-PalinResult palin_longest(std::uint32_t, const std::uint8_t*, std::uint32_t*, std::uint32_t*) { return PalinResult::NullArgument; }
-PalinResult palin_count(std::uint32_t, const std::uint8_t*, std::uint64_t*) { return PalinResult::NullArgument; }
+PalinResult palin_scratch_words(std::uint32_t, std::uint32_t*) { return PalinResult::NullArgument; }
+PalinResult palin_longest(std::uint32_t, const std::uint8_t*, std::uint32_t*, std::uint32_t, std::uint32_t*, std::uint32_t*) {
+  return PalinResult::NullArgument;
+}
+PalinResult palin_count(std::uint32_t, const std::uint8_t*, std::uint32_t*, std::uint32_t, std::uint64_t*) { return PalinResult::NullArgument; }
 
 }  // namespace lumora::palin
