@@ -19,7 +19,8 @@ AssignResult assign_scratch_words(std::uint32_t n, std::uint32_t* out_words);
 // *out_total is the true minimum.
 // Check order: a null pointer argument gives NullArgument (cost, scratch and out_col only while n is above 0; out_total always); then n above kMaxN
 // gives TooLarge (the condition uses the given n even when above the limit); then, only while n is above 0, scratch_words below 16 * n + 16 gives
-// ScratchTooSmall. Nothing is written on any failure. n = 0 is Ok with *out_total = 0 and nothing written to out_col.
+// ScratchTooSmall. The scratch pointer needs only the alignment of u32: an implementation must not reinterpret it as a pointer to a wider type
+// (store a 64-bit value as two u32 words or by copying bytes), and a test may pass a scratch that starts at any u32 boundary. Nothing is written on any failure. n = 0 is Ok with *out_total = 0 and nothing written to out_col.
 AssignResult assign_run(std::uint32_t n, const std::uint32_t* cost, std::uint32_t* scratch, std::uint32_t scratch_words, std::uint64_t* out_total,
                         std::uint32_t* out_col);
 // Decisions: the method is free as long as the contract above holds. A header ambiguity found later is a question to the maintainer, not an
