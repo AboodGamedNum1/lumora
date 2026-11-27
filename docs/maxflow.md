@@ -41,10 +41,10 @@ Sampled: the random battery (20000 graphs, nodes 2..12, edges 0..40, four capaci
 
 127 source mutants (`/tmp` script, not in the repo), 10 s timeout, built with ASan + UBSan, one full run on the final tests.
 
-- 84 killed by a failed assertion.
+- 85 killed by a failed assertion.
 - 12 crash-only (no failed assertion, killed by a sanitizer or abort): w null flow, w null edges>0, w null edges none, w null eu only, w null ev only, w null cap only, w null side none, w sizes null, d bfs visited, d adv level, d adv step, f visited.
 - 16 timeouts. 13 did not finish within 5 s on a 20000-graph small-graph driver that the unmutated code finishes well under 1 s (non-termination shown by that hang test): b cap live, b count none v, d bfs init, d bfs src level, d bfs cap, d bfs level, d bfs end, d iter reset, d full none, d adv cap, d adv level ge, d adv skip, d sink test. 3 are unclassified (they finished that driver with equal results; the slowness shows only in the test run): w sink >=, w src only, d iter reset part. They are not called hangs or quadratic.
-- 15 not killed:
+- 14 not killed:
   - b live loop: self-loops also get arcs. A loop arc never satisfies the level rule, so results are the same; it fits the 2E arcs. Equivalent.
   - d dead src: `depth == 0` instead of `u == src`. The two are the same at that point because levels rise strictly along the path. Equivalent.
   - d dead iter: the current-arc pointer is not advanced on retreat. The dead node has level none, so that arc fails the next check and is skipped. Same results.
