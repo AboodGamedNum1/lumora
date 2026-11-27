@@ -1,7 +1,8 @@
 // Digit counting in a positional base: how many integers in 0 .. n have a given digit sum, and the sum of the digit sums of 0 .. n.
 // Pure integer: no floating point, no libm, no 128-bit types (no __int128, no compiler builtins or intrinsics: MSVC), no allocation, no recursion, no
-// global state, no tables larger than a few dozen u64 on the stack. Every call takes O(digits * base * digit_sum_limit) steps or better, where the number
-// of digits of n in the base is at most 41 (n below 2^40) and the base is at most 64.
+// global state, no static tables. Working memory is automatic (stack) memory of fixed size only: at most 512 u64 words (4 KiB) in total across all local
+// arrays, no variable-length arrays. Every call takes O(digits * base * digit_sum_limit) steps or better, where the number of digits of n in the base is
+// at most 41 (n up to 2^40) and the base is at most 64.
 // Evidence label: unit tests only.
 #pragma once
 #include <cstdint>
