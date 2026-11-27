@@ -8,6 +8,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -143,7 +144,7 @@ void shuffle(Lcg& r, std::vector<u32>& e) {
 
 // Every matrix with entries from `vals` (row-major odometer, last entry fastest), identical to tools/assign_ref.py.
 u64 enumerate_group(u32 n, const std::vector<u32>& vals, u32& count) {
-  const u32 cells = n * n;
+  const std::size_t cells = static_cast<std::size_t>(n) * n;
   const u32 V = static_cast<u32>(vals.size());
   std::vector<u32> idx(cells, 0);
   Mat m;
@@ -152,13 +153,13 @@ u64 enumerate_group(u32 n, const std::vector<u32>& vals, u32& count) {
   u64 h = kFnvOff;
   count = 0;
   for (;;) {
-    for (u32 i = 0; i < cells; ++i) m.a[i] = vals[idx[i]];
+    for (std::size_t i = 0; i < cells; ++i) m.a[i] = vals[idx[i]];
     ++count;
     const u64 want = brute(m);
     const Run r = run(m);
     REQUIRE(certified(m, r, want));
     h = fold_bytes(h, r.total, 8);
-    u32 i = cells;
+    std::size_t i = cells;
     while (i > 0 && idx[i - 1u] == V - 1u) {
       idx[i - 1u] = 0;
       --i;
@@ -206,9 +207,9 @@ Mat big_matrix(u32 pid) {
   Mat m;
   m.n = N;
   switch (pid) {
-    case 0: m.a.assign(N * N, 0u); break;
-    case 1: m.a.assign(N * N, kMaxV); break;
-    case 2: m.a.assign(N * N, 1234567u); break;
+    case 0: m.a.assign(static_cast<std::size_t>(N) * N, 0u); break;
+    case 1: m.a.assign(static_cast<std::size_t>(N) * N, kMaxV); break;
+    case 2: m.a.assign(static_cast<std::size_t>(N) * N, 1234567u); break;
     case 3:
       for (u32 i = 0; i < N; ++i) {
         for (u32 j = 0; j < N; ++j) m.a.push_back(i == j ? 0u : kMaxV);
@@ -307,7 +308,7 @@ TEST_CASE("random battery: 8000 matrices of side 1 to 6 by digest, also against 
     Mat m;
     m.n = 1u + r.rnd(6);
     const u32 mode = r.rnd(4);
-    for (u32 i = 0; i < m.n * m.n; ++i) m.a.push_back(entry(r, mode));
+    for (std::size_t i = 0; i < static_cast<std::size_t>(m.n) * m.n; ++i) m.a.push_back(entry(r, mode));
     const Run run1 = run(m);
     REQUIRE(certified(m, run1, brute(m)));
     h = fold_bytes(h, run1.total, 8);
@@ -323,7 +324,7 @@ TEST_CASE("mid-size matrices (300 matrices of side 7 to 12): digest and certific
     Mat m;
     m.n = 7u + r.rnd(6);
     const u32 mode = r.rnd(4);
-    for (u32 i = 0; i < m.n * m.n; ++i) m.a.push_back(entry(r, mode));
+    for (std::size_t i = 0; i < static_cast<std::size_t>(m.n) * m.n; ++i) m.a.push_back(entry(r, mode));
     const Run run1 = run(m);
     REQUIRE(run1.res == AssignResult::Ok);
     const u64 got = run1.total;
@@ -464,7 +465,7 @@ TEST_CASE("relabelled matrices: permuted rows and columns, transposes and added 
     m.n = 1u + r.rnd(8);
     const u32 n = m.n;
     const u32 lim = 1u << 20;
-    for (u32 i = 0; i < n * n; ++i) m.a.push_back(r.rnd(lim));
+    for (std::size_t i = 0; i < static_cast<std::size_t>(n) * n; ++i) m.a.push_back(r.rnd(lim));
     const Run base = run(m);
     REQUIRE(base.res == AssignResult::Ok);
     const u64 want = base.total;
@@ -475,16 +476,16 @@ TEST_CASE("relabelled matrices: permuted rows and columns, transposes and added 
     shuffle(r, pc);
     Mat p;
     p.n = n;
-    p.a.assign(n * n, 0);
+    p.a.assign(static_cast<std::size_t>(n) * n, 0);
     for (u32 i = 0; i < n; ++i) {
-      for (u32 j = 0; j < n; ++j) p.a[pr[i] * n + pc[j]] = m.a[i * n + j];
+      for (u32 j = 0; j < n; ++j) p.a[static_cast<std::size_t>(pr[i]) * n + pc[j]] = m.a[static_cast<std::size_t>(i) * n + j];
     }
     REQUIRE(certified(p, run(p), want));
     Mat t;
     t.n = n;
-    t.a.assign(n * n, 0);
+    t.a.assign(static_cast<std::size_t>(n) * n, 0);
     for (u32 i = 0; i < n; ++i) {
-      for (u32 j = 0; j < n; ++j) t.a[j * n + i] = m.a[i * n + j];
+      for (u32 j = 0; j < n; ++j) t.a[static_cast<std::size_t>(j) * n + i] = m.a[static_cast<std::size_t>(i) * n + j];
     }
     REQUIRE(certified(t, run(t), want));
     Mat q = m;
@@ -497,7 +498,7 @@ TEST_CASE("relabelled matrices: permuted rows and columns, transposes and added 
       add += cc[i];
     }
     for (u32 i = 0; i < n; ++i) {
-      for (u32 j = 0; j < n; ++j) q.a[i * n + j] += rr[i] + cc[j];
+      for (u32 j = 0; j < n; ++j) q.a[static_cast<std::size_t>(i) * n + j] += rr[i] + cc[j];
     }
     REQUIRE(certified(q, run(q), want + add));
   }
@@ -505,7 +506,7 @@ TEST_CASE("relabelled matrices: permuted rows and columns, transposes and added 
   Mat m = big_matrix(5);
   const u32 N = m.n;
   for (u32 i = 0; i < N / 2u; ++i) {
-    for (u32 j = 0; j < N; ++j) std::swap(m.a[i * N + j], m.a[(N - 1u - i) * N + j]);
+    for (u32 j = 0; j < N; ++j) std::swap(m.a[static_cast<std::size_t>(i) * N + j], m.a[static_cast<std::size_t>(N - 1u - i) * N + j]);
   }
   const u32* row = &kBig[4u * 5u];
   REQUIRE(certified(m, run(m), (static_cast<u64>(row[3]) << 32) | row[2]));
@@ -529,7 +530,7 @@ TEST_CASE("scratch that starts at an odd u32 boundary of a larger buffer, with e
   for (u32 k = 0; k < 200u; ++k) {
     Mat m;
     m.n = 1u + r.rnd(9);
-    for (u32 i = 0; i < m.n * m.n; ++i) m.a.push_back(r.rnd(1000));
+    for (std::size_t i = 0; i < static_cast<std::size_t>(m.n) * m.n; ++i) m.a.push_back(r.rnd(1000));
     const u64 want = brute(m.n <= 6 ? m : Mat{1, {0}}) * (m.n <= 6 ? 1u : 0u);
     std::vector<u32> buf(16ull * m.n + 16ull + 1ull, kGarbage);
     std::vector<u32> col(m.n, kSentinel);
@@ -552,7 +553,7 @@ TEST_CASE("scratch filled with different random words (full 32-bit words, and pe
     Mat m;
     m.n = 1u + r.rnd(8);
     const u32 mode = r.rnd(4);
-    for (u32 i = 0; i < m.n * m.n; ++i) m.a.push_back(entry(r, mode));
+    for (std::size_t i = 0; i < static_cast<std::size_t>(m.n) * m.n; ++i) m.a.push_back(entry(r, mode));
     std::vector<u32> sc(16ull * m.n + 16ull);
     const bool small = (k % 2u) == 1u;
     for (u32 q = 0; q + 1u < sc.size() + 1u; q += 2u) {
