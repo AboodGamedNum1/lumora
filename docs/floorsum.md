@@ -49,11 +49,14 @@ Products of 32-bit values in the tests are widened to `u64` or `i64` before the 
 
 ## Mutation testing
 
-90 source mutants of `core/floorsum/floorsum.cpp` (script outside the repo), built with ASan + UBSan and run against the final tests (which were not edited after the run). A mutant is called killed by the first failed assertion; a mutant that ended in a sanitizer abort or crash with no failed assertion is crash-only.
+90 source mutants of `core/floorsum/floorsum.cpp` (script outside the repo), built with ASan + UBSan and run against the final tests. The test file was not edited after the run, and this docs revision changed no other file, so the mutants were not rerun. A mutant is called killed by the first failed assertion; a mutant that ended in a sanitizer abort or crash with no failed assertion is crash-only.
 
 - 70 killed by a failed assertion.
 - 7 crash-only: w_ge_b, w_bmod, w_ymax_sub, d_ge_b, d_bmod, d_ymax_sub, e_szero.
-- 5 timeouts, each run alone in an instrumented copy with a pass counter in the loop: w_ge_a, w_amod, w_swap_b, d_ge_a, d_amod. The counter passed 100 in one call in all five; the unmutated code never exceeds 21 passes in any test, so these are non-terminating loops (for example `a > m` instead of `a >= m` leaves `a == m` unreduced, so the swap returns the same pair forever).
+- 5 timeouts (w_ge_a, w_amod, w_swap_b, d_ge_a, d_amod). They are classified as timeouts and are not counted as kills (70 + 7 + 5 + 8 = 90). Each was run alone in an instrumented copy with a pass counter in the loop; the unmutated code never exceeds 21 passes in any test, and each mutant exceeded 100 passes in one call. The counter alone proves only that bound violation; what is shown for each:
+  - w_ge_a, d_ge_a (`a > m` for `a >= m`): with `a == m` the state repeats exactly. `a` is not reduced, `b < m` after its reduction, so `y = m n + b`, the new `n = floor(y / m) = n`, the new `b = y % m = b`, and the swap returns the same pair `(m, a) = (m, m)`. The state `(n, m, a, b)` is a fixed point and the loop never ends. The input `n = 5, m = 5, a = 5, b = 0` in `floorsum hand checked values` reaches it (checked by running the loop state by hand: `(5, 5, 5, 0)` after every pass).
+  - w_amod, d_amod (the `a %= m` removed): the same fixed point at `a == m`, same input.
+  - w_swap_b (`a = b` for `a = t` in the swap): no exact repeat was shown. The instance found (`n = 1, m = 2^16, a = b = 2^32 - 1`) takes 65536 passes because `m` falls by 1 per pass, then ends. So this mutant is only a pass-count bound violation (far above 21 passes, and slow enough to hit the 20 s limit under the sanitizers in the whole test run); non-termination is not claimed for it.
 - 8 not killed (survivors), argued:
   - tri_odd: `n * (n / 2)` for `n * ((n - 1) / 2)`; this is the odd branch, where `n` is odd, so `n / 2 == (n - 1) / 2`. Equivalent.
   - w_ylt, d_ylt: `y_max <= m` for `y_max < m`. With `y == m` the next pass would have `n = 1`, `b = 0`; one term `floor(0 / m')` is 0 and the term `tri(1) * q` is 0, so the pass adds nothing. Equivalent.
