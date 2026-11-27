@@ -15,7 +15,8 @@ enum class SsspResult : std::uint8_t { Ok = 0, NullArgument = 1, TooLarge = 2, S
 //
 // RESULT for the source s: dist[v] = the length of a shortest path from s to v (a sum of u64 weights; the largest possible value is below 2^48, so
 // it never overflows), 0 for v = s, kInf when v is not reachable. count[v] = the number of different shortest paths from s to v, taken modulo 2^64
-// (a path is a sequence of EDGES, so two parallel edges give two paths; count[s] = 1; count is 0 exactly for an unreachable node). parent[v] = for
+// (a path is a sequence of EDGES, so two parallel edges give two paths; count[s] = 1; count is 0 for an unreachable node; a REACHABLE node can also
+// have count 0 when its true number of shortest paths is a multiple of 2^64, so only dist tells reachability, never count). parent[v] = for
 // a reachable v other than s, the smallest node index u such that some edge from u to v with weight x has dist[u] + x = dist[v] (a node on some
 // shortest path to v, one step before v; the smallest index among all of them); kNoNode for s and for unreachable nodes.
 //
