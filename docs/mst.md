@@ -57,7 +57,18 @@ One run of all 128 source mutants against the final test file (8 test cases, 491
 - 21 crash-only (a sanitizer abort or fault, no failed assertion), listed individually: sizes null scratch; sizes null forest; sizes null and; c null count; c null weight; c null and; c null edges>0; c null edges none; c null eu; c null eu only; c null ev only; c null scratch; c null out none; c bad eu only; c bad ev only; c bad >; c bad > v; c bad and; c bad last; c bad first; c bad none.
 - 1 timeout, listed apart: `find step` (path halving followed by an extra store `p[x] = px`). It is a non-termination, shown by a hang test: a 9-node, 9-edge graph that builds a find chain of depth 3 does not finish in 3 s with the mutant (non-sanitized build) and finishes at once with the original. The extra store makes a two-element parent cycle.
 - 24 survivors, none non-equivalent in result:
-  - Shape or time only (the forest is identical; only the shape of the union-find trees changes, so only running time could differ, and time is not asserted): `find no halving`, `find halving only`, `c union size`, `c union size always`, `c union never`, `c union <=`, `c union size sum`, `c union size sum b`, `c union size none`, `c sizes mask`, `c sizes mask b`, `c root bit`, `c root bit low`, `c comp init`, `c comp init size0`. Path halving alone or size balancing alone already gives a logarithmic amortised bound, but none of these variants is shown slow or fast by a test here. Their time cost is not measured.
+  - Time-only (15; see the next section). The forest is identical in every one; only the shape of the union-find trees, and so the running time, can differ. These are not killed and are not proved equivalent in time: the header forbids quadratic behavior, and no test here asserts time. Each line names the mechanism the variant breaks and the one that stays (the two mechanisms are path halving and union by size):
+    - `find no halving` (the path is not shortened): breaks path halving; union by size stays.
+    - `find halving only` (`x = px` after the store, which is path splitting): replaces halving by path splitting; both mechanisms stay in kind.
+    - `c union size` (the larger component goes under the smaller): breaks union by size, in the opposite direction; path halving stays.
+    - `c union size always` (always swap) and `c union never` (never swap): break union by size; path halving stays.
+    - `c union <=` (swap on a tie): union by size stays, only the tie rule changes; path halving stays.
+    - `c union size sum`, `c union size sum b`, `c union size none` (the stored size is not the component size): break union by size; path halving stays.
+    - `c sizes mask` (the first size keeps the root bit, so it never compares smaller: never swap) and `c sizes mask b` (the second keeps the root bit: always swap): break union by size; path halving stays.
+    - `c comp init size0` (all sizes stay 0, so every comparison ties): breaks union by size; path halving stays.
+    - `c comp init` (every node starts at size 2, so sizes are doubled and keep their order): union by size stays; path halving stays.
+    - `c root bit` and `c root bit low` (a different root marker, 0x10000 and 0x40000000; node indices and sizes stay below it): both mechanisms stay.
+    - None of the 15 breaks both mechanisms.
   - `before idx <=` (`a <= b` for equal weights): the heap never compares an index with itself, so `<` and `<=` agree.
   - `before w <=`: the branch is entered only for unequal weights, where `<=` and `<` agree.
   - `heap end >0`: the extra pass swaps element 0 with itself and sifts a heap of size 0, a no-op.
@@ -68,6 +79,25 @@ One run of all 128 source mutants against the final test file (8 test cases, 491
   - `c loop no early`: once nodes - 1 edges are taken every later edge joins two nodes in the same component, so none is taken.
 
 During development three further null-pointer variants (`c null edges>0`, `c null scratch >1`, `c null scratch nodes`) survived until tests with a single edge and with nodes + edges equal to 1 were added; in this run they are killed.
+
+## Doubled-size timing of the weakest variants
+
+Local, labelled as such: g++ -std=c++17 -O2, no sanitizer, one run, best of 5 calls, whole `mst_forest` call (the sort included), nodes 16384, 32768, 65536 with edges = 4 * nodes (262144 at the largest), against the original. Two inputs, each with one isolated last node so the early stop never fires. Input 0 is a chain (each new node becomes the first endpoint over the previous component, edges in ascending weight) followed by random edges among the first nodes/8. Input 1 merges pairs, then pairs of pairs and so on (a binomial shape), followed by random edges among the last nodes/16 nodes. The variants are the source mutants `find no halving`, `c union never`, `c union size always` and `c union size`. Find-loop iterations were counted with a copy of each source that increments a counter; times and counts come from separate builds.
+
+| variant | input | 16384: ms, steps | 32768: ms, steps | 65536: ms, steps |
+| --- | --- | --- | --- | --- |
+| original | 0 | 5.57, 131072 | 12.02, 262144 | 26.74, 524288 |
+| find no halving | 0 | 5.63, 131072 | 12.19, 262144 | 27.12, 524288 |
+| union never | 0 | 5.68, 150447 | 13.25, 300798 | 28.48, 601671 |
+| union size always | 0 | 5.85, 131072 | 12.07, 262144 | 27.21, 524288 |
+| union size (inverted) | 0 | 5.66, 150447 | 12.23, 300798 | 27.62, 601671 |
+| original | 1 | 5.58, 132595 | 12.02, 265164 | 26.76, 530333 |
+| find no halving | 1 | 7.45, 820073 | 16.13, 1736953 | 35.20, 3669894 |
+| union never | 1 | 5.61, 132595 | 12.04, 265164 | 27.36, 530333 |
+| union size always | 1 | 5.65, 140578 | 12.10, 281264 | 26.87, 562520 |
+| union size (inverted) | 1 | 5.59, 132552 | 12.07, 265117 | 27.33, 530268 |
+
+Reading: doubling the input roughly doubles the time and the steps for the original and for every variant on both inputs. The one visible cost is `find no halving` on input 1 (about 6 times the original's find steps at 65536, growing by a factor of about 2.1 per doubling, which fits a logarithmic depth). No variant shows a quadratic trend on these inputs. These inputs are not proven worst cases, so this is not a proof that the variants are time-equivalent, and the survivors stay classified as not killed.
 
 ## Not run
 
