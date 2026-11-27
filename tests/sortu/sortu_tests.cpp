@@ -89,9 +89,15 @@ u32 dirty_stack(u32 salt) {
   return block[salt & 4095u];
 }
 
+#if defined(_MSC_VER)
+#define SORTU_TEST_NOINLINE __declspec(noinline)
+#else
+#define SORTU_TEST_NOINLINE __attribute__((noinline))
+#endif
+
 // Fills about 64 KiB of stack with the value 3 in a function that is never inlined, so the frames of the sort that runs next
 // sit on top of it. See the stale-entry tests.
-__attribute__((noinline)) u32 fill_stack_with_three() {
+SORTU_TEST_NOINLINE u32 fill_stack_with_three() {
   volatile u32 block[16384];
   for (u32 i = 0; i < 16384; ++i) block[i] = 3u;
   return block[7];
