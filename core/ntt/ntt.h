@@ -22,8 +22,9 @@ NttResult ntt_scratch_words(std::uint32_t na, std::uint32_t nb, std::uint32_t* o
 // above 0) gives NullArgument; then na or nb above kMaxLen gives TooLarge (the condition uses the given lengths even when above the limit); then,
 // only while r is above 0, scratch_words below 2 * m gives ScratchTooSmall; then, only while r is above 0, out_cap below r gives OutTooSmall; then an
 // entry of a or b that is not below kMod gives ValueOutOfRange (every entry is looked at; the input is not modified). Nothing is written on any
-// failure, not even *out_len. The scratch pointer needs only the alignment of u32. The arrays a, b and out may alias each other (the result is the
-// same as with separate arrays) but must not overlap the scratch.
+// failure, not even *out_len. The scratch pointer needs only the alignment of u32. The arrays a, b and out may be the same array in any combination (equal start
+// pointers: a == b, a == out, b == out or all three; the result is the same as with separate arrays, so every input entry is read before it can be
+// overwritten). Any other overlap between a, b and out, and any overlap with the scratch, is outside the contract and is not tested.
 NttResult ntt_convolve(const std::uint32_t* a, std::uint32_t na, const std::uint32_t* b, std::uint32_t nb, std::uint32_t* scratch,
                        std::uint32_t scratch_words, std::uint32_t* out, std::uint32_t out_cap, std::uint32_t* out_len);
 // Decisions: the method is free as long as the contract above holds. A header ambiguity found later is a question to the maintainer, not an
