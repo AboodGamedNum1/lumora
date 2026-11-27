@@ -312,3 +312,15 @@ TEST_CASE("dsu: a failing find does not compress", "[dsu]") {
   REQUIRE(dsu_unite(p.data(), 4, 3, 4, &m) == DsuResult::OutOfRange);
   REQUIRE(p == snap);
 }
+
+TEST_CASE("dsu: find and unite accept n == kMaxElements with a one-element array", "[dsu]") {
+  // Only element 0 is touched, so a 1-element array is enough: no large allocation. count_sets and init need the whole array and are not run here.
+  std::vector<u32> p(1, 0u);
+  u32 root = 99;
+  REQUIRE(dsu_find(p.data(), kMaxElements, 0, &root) == DsuResult::Ok);
+  REQUIRE(root == 0u);
+  bool merged = true;
+  REQUIRE(dsu_unite(p.data(), kMaxElements, 0, 0, &merged) == DsuResult::Ok);
+  REQUIRE_FALSE(merged);
+  REQUIRE(p[0] == 0u);
+}
