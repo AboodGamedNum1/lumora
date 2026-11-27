@@ -54,17 +54,27 @@ Also: a golden digest, hand-checked cases (clockwise input, edge point, tie on s
 
 ## Mutation
 
-113 source mutants, 10 s harness timeout, built with ASan+UBSan and `-fno-sanitize-recover=all`, local run.
-- 95 killed by assertions.
-- 13 crash-only (no assertion failure; the sanitizer or a fault stopped them): cross 32-bit product; sift sibling +1; words null; c null out_count; c null xs; c null ys; c null out; c null scratch; c null and; c null n>1; c n0 none; out count; out count none.
+One run of all 113 source mutants against the final test file (9 test cases, 269 assertions), local, g++ -std=c++17 -O1, ASan+UBSan with `-fno-sanitize-recover=all`, 10 s harness timeout per mutant. Every count below is from that run.
+
+- 93 killed by assertions (a Catch2 FAILED line).
+- 15 crash-only (a sanitizer abort or fault, no failed assertion), listed individually: cross 32-bit product; sift break >=; sift sibling +1; words null; c null out_count; c null xs; c null ys; c null out; c null scratch; c null and; c null n>1; c n0 none; upper push; out count; out count none.
 - 0 timeouts.
-- 5 survivors, all equivalent in result:
-  - cross 32-bit (differences computed in 32 bits): with the coordinate limit a difference is at most 2^31 - 2 and fits, so it is identical on every accepted input.
-  - heap end > 0: the extra pass swaps element 0 with itself and sifts a heap of size 0, a no-op.
-  - c init id (scratch starts in reverse order): the sort key includes the index, so the order is total and the sorted result does not depend on the start order.
-  - c dedupe cmp (compare with `scratch[i-1]` instead of the last kept): equal points are adjacent, and `scratch[i-1]` is either the last kept entry or an untouched original in the same run, so the decision is the same.
-  - c m1 none (drop the m = 1 fast path): for m = 1 the general path gives k = 1, no upper points, and writes the same single index. The fast path is redundant.
-- One survivor was non-equivalent: "c null n>1" (null check only for n above 1) survived until a test with n = 1 and each pointer null was added; it is now a crash-only kill. Chunks other than that one were run before this test was added; it only adds checks.
+- 5 survivors.
+
+The 32-bit variants, with their exact text (the mutated line replaces the original in `cross`):
+
+- `cross 32-bit` (SURVIVED). Original: `const i64 ax = static_cast<i64>(p.x[a]) - p.x[o];`. Mutant: `const i64 ax = static_cast<i32>(p.x[a] - p.x[o]);`. The difference is computed in 32 bits and widened to int64 before any multiplication. Equivalent: coordinates are within +/-(2^30 - 1), so a difference is at most 2^31 - 2 in magnitude and fits int32 on every accepted input (inputs outside the limit return CoordinateRange before any cross product). The products and the result stay int64, so the value is identical.
+- `cross 32-bit product` (killed, crash-only here). Original: `return ax * by - ay * bx;`. Mutant: `return static_cast<i32>(ax) * static_cast<i32>(by) - static_cast<i32>(ay) * static_cast<i32>(bx);`. Under UBSan the int multiplication overflows (for example -1073676287 * -65534) and aborts, so it is in the crash-only list. Built without instrumentation (and linked against the same sanitized Catch2 libraries) it is killed by 15 failed assertions. This is a 32-bit product, so it is not equivalent.
+- Not one of the 113 (checked once separately, same test file): narrowing the result, `return static_cast<i32>(ax * by - ay * bx);`. It is killed by 15 failed assertions, both with sanitizer instrumentation and without. Not equivalent.
+
+The other four survivors, all equivalent in result:
+
+- `heap end >0` (`for (u32 end = n; end > 0; --end)`): the extra pass swaps element 0 with itself and sifts a heap of size 0, a no-op.
+- `c init id` (scratch starts as n - 1 - i): the sort key includes the index, so the order is total and the sorted result does not depend on the start order.
+- `c dedupe cmp` (compare with `scratch[i - 1]` instead of the last kept entry): equal points are adjacent, and `scratch[i - 1]` is either the last kept entry or an untouched original of the same run, so the decision is the same.
+- `c m1 none` (drop the m = 1 fast path): for m = 1 the general path gives k = 1, no upper points, and writes the same single index. The fast path is redundant.
+
+"c null n>1" (null check only for n above 1) is a non-equivalent mutant that survived an earlier run until an n = 1 null-pointer test was added; in this run it is crash-only.
 
 ## Not run
 
