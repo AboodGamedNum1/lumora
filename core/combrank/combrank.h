@@ -2,7 +2,8 @@
 // the masks (equivalently colex order): the subsets with c_1 < c_2 < ... < c_k have rank C(c_1, 1) + C(c_2, 2) + ... + C(c_k, k), and the k-subsets of n
 // elements get the ranks 0 to C(n, k) - 1 with no gaps. Every C(n, k) for n at most 64 fits a u64 (the largest is C(64, 32) = 1832624140942590534).
 // Pure integer: no floating point, no libm, no 128-bit types (no __int128, no compiler builtins or intrinsics: MSVC), no allocation, no recursion, no
-// global state, no static tables (compute the binomials). Every call takes O(n * k) steps or fewer.
+// global state, no static tables (compute the binomials). Cost: a call does O(n + k) binomial updates plus one binomial built from scratch in O(k) updates, each update an exact
+// multiplication and division after a gcd of at most about 90 trips (so a few hundred thousand elementary steps at most); a loop over all masks or all ranks is not acceptable.
 // Evidence label: unit tests only.
 #pragma once
 #include <cstdint>
