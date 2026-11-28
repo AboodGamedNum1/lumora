@@ -13,6 +13,7 @@ Usage:
   python3 tools/zeckendorf_ref.py pairs       digest of every list (p, q) with p, q in 0..255
   python3 tools/zeckendorf_ref.py triples     digest of every list (a, b, c) with a, b, c in 0..12
   python3 tools/zeckendorf_ref.py planted     digest of the planted-error lists
+  python3 tools/zeckendorf_ref.py planted2    digest of the planted-error lists over every prefix of the odd and the even list of length 5..46
   python3 tools/zeckendorf_ref.py around      digest of every single-term change of the lists of 2^64 - 1 and 2^64
   python3 tools/zeckendorf_ref.py fibk        digest of F(k) for k = 0..93
   python3 tools/zeckendorf_ref.py check       the identities and the header examples; also the enumeration cross-check; prints "OK"
@@ -186,9 +187,9 @@ B3 = list(range(93, 2, -2))
 B4 = [93, 91, 88, 86, 82, 76, 74, 70, 66, 63, 59, 56, 47, 44, 40, 37, 33, 31, 29, 25, 19, 17, 13, 11, 6]
 
 
-def planted_lists():
+def planted_from(bases):
     out = []
-    for base in (B1, B2, B3, B4):
+    for base in bases:
         n = len(base)
         for i in range(n):
             if i > 0:
@@ -207,6 +208,15 @@ def planted_lists():
         out.append(base + [1])
         out.append(base + [0])
     return out
+
+
+def planted_lists():
+    return planted_from((B1, B2, B3, B4))
+
+
+def planted2_lists():
+    """the same errors at every position of every prefix of the odd list and of the even list, of every length 5..46."""
+    return planted_from([B3[:n] for n in range(5, 47)] + [B2[:n] for n in range(5, 47)])
 
 
 def around_lists():
@@ -289,6 +299,8 @@ def main():
         print(hx(digest_lists(triples_lists())))
     elif cmd == "planted":
         print(len(planted_lists()), hx(digest_lists(planted_lists())))
+    elif cmd == "planted2":
+        print(len(planted2_lists()), hx(digest_lists(planted2_lists())))
     elif cmd == "around":
         print(len(around_lists()), hx(digest_lists(around_lists())))
     elif cmd == "fibk":
@@ -316,6 +328,9 @@ def main():
         al = planted_lists()
         print("constexpr std::size_t kPlantedCount = %d;" % len(al))
         print("constexpr std::uint64_t kPlantedDigest = %s;" % hx(digest_lists(al)))
+        al = planted2_lists()
+        print("constexpr std::size_t kPlanted2Count = %d;" % len(al))
+        print("constexpr std::uint64_t kPlanted2Digest = %s;" % hx(digest_lists(al)))
         al = around_lists()
         print("constexpr std::size_t kAroundCount = %d;" % len(al))
         print("constexpr std::uint64_t kAroundDigest = %s;" % hx(digest_lists(al)))

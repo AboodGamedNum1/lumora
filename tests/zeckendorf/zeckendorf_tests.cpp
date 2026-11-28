@@ -2,7 +2,7 @@
 // (F(k), F(k - 1)); the test subtracts from the list), from the definition (a list is valid and its sum is n), and from FNV-1a digests made by tools/zeckendorf_ref.py
 // (Python bigints, standard library only). Extents (see docs/zeckendorf.md):
 //   every n = 0..2^22 (4 chunks); 200000 sampled u64 (4 shards); F(k) - 1, F(k), F(k) + 1 for every k, 2^k - 1, 2^k, 2^k + 1; every arithmetic index list;
-//   100000 random valid index lists (2 shards); every list of length 0..4 over 16 boundary indices; every pair 0..255; every triple 0..12; planted errors;
+//   100000 random valid index lists (2 shards); every list of length 0..4 over 16 boundary indices; every pair 0..255; every triple 0..12; planted errors (four long lists, and every prefix of the odd and the even list of length 5..46);
 //   every single-term change of the lists of 2^64 - 1 and 2^64; fib for every k; the cap matrix; the failure cases.
 #include <catch2/catch_test_macros.hpp>
 
@@ -43,6 +43,8 @@ constexpr std::uint64_t kPairsDigest = 0x3b301a6dc2b75fb9ull;
 constexpr std::uint64_t kTriplesDigest = 0x24313ed160714607ull;
 constexpr std::size_t kPlantedCount = 1573;
 constexpr std::uint64_t kPlantedDigest = 0x863703b56c7755ccull;
+constexpr std::size_t kPlanted2Count = 23562;
+constexpr std::uint64_t kPlanted2Digest = 0xbca6abb55e367004ull;
 constexpr std::size_t kAroundCount = 10035;
 constexpr std::uint64_t kAroundDigest = 0x1b227aad09ed9b6dull;
 constexpr std::uint64_t kFibkDigest = 0x3c1018983f59bc0eull;
@@ -289,8 +291,7 @@ void each_alpha(F&& f) {
 }
 
 template <class F>
-void each_planted(F&& f) {
-  const List bases[4] = {b1(), evens(), odds(), b4()};
+void each_planted_over(const std::vector<List>& bases, F&& f) {
   for (const List& base : bases) {
     const std::size_t n = base.size();
     for (std::size_t i = 0u; i < n; ++i) {
@@ -334,6 +335,22 @@ void each_planted(F&& f) {
     t3.push_back(0);
     f(t3);
   }
+}
+
+template <class F>
+void each_planted(F&& f) {
+  each_planted_over(std::vector<List>{b1(), evens(), odds(), b4()}, f);
+}
+
+// every prefix of the odd list and of the even list, of every length 5..46
+template <class F>
+void each_planted2(F&& f) {
+  std::vector<List> bases;
+  for (int pass = 0; pass < 2; ++pass) {
+    const List full = pass == 0 ? odds() : evens();
+    for (std::size_t n = 5u; n <= 46u; ++n) bases.push_back(List(full.begin(), full.begin() + static_cast<std::ptrdiff_t>(n)));
+  }
+  each_planted_over(bases, f);
 }
 
 template <class F>
@@ -738,6 +755,10 @@ TEST_CASE("invalid lists: every triple a, b, c in 0..12", "[zeckendorf]") {
 
 TEST_CASE("planted errors: a duplicate, an adjacent pair, a swap or an out-of-range index at every position of four long lists", "[zeckendorf]") {
   run_lists([](auto&& f) { each_planted(f); }, kPlantedCount, kPlantedDigest);
+}
+
+TEST_CASE("planted errors over every prefix of the odd list and of the even list, lengths 5..46", "[zeckendorf]") {
+  run_lists([](auto&& f) { each_planted2(f); }, kPlanted2Count, kPlanted2Digest);
 }
 
 TEST_CASE("around 2^64 - 1 and 2^64: every single-term change, deletion and insertion", "[zeckendorf]") {
