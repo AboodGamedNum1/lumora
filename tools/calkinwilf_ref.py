@@ -7,6 +7,8 @@ Usage:
   python3 tools/calkinwilf_ref.py pairs K     digest of (p, q, code, index) for p in a half of 0..1024 (K = 0: p <= 512, K = 1: p >= 513) and every q in 0..1024
   python3 tools/calkinwilf_ref.py nodes K     digest of (n, s(n), s(n + 1)) for the 50000 sampled nodes of shard K = 0..3
   python3 tools/calkinwilf_ref.py fracs K     digest of (p, q, code, index) for the 50000 sampled pairs of shard K = 0..1
+  python3 tools/calkinwilf_ref.py deep        digest and counts of the 20000 sampled depth 40..63 nodes that fit a u32 plus their children that fit a u32
+  python3 tools/calkinwilf_ref.py noncoprime  digest of 1000 deliberately non-coprime u32 pairs
   python3 tools/calkinwilf_ref.py edges       the digest of the edge nodes 2^k - 1, 2^k, 2^k + 1 and 2^64 - 3 .. 2^64 - 1
   python3 tools/calkinwilf_ref.py check       the identities below (fusc maxima, header examples, the tree against the inverse), prints "OK"
   python3 tools/calkinwilf_ref.py emit        print the golden values and tables as C++ source for tests/calkinwilf/calkinwilf_tests.cpp
@@ -165,6 +167,58 @@ def fracs_digest(k):
     return h
 
 
+def deep_items():
+    """the 20000 sampled nodes of depth 40..63 whose fraction fits a u32, and their depth + 1 children that fit a u32.
+    Returns (rows, nodes, children): rows are (p, q, code, index) in the order node, left child, right child."""
+    rows = []
+    nodes = 0
+    kids = 0
+    pos = 0
+    while nodes < 20000:
+        d = 40 + splitmix_at(3 * pos + (1 << 41)) % 24
+        n = (1 << d) + splitmix_at(3 * pos + 1 + (1 << 41)) % (1 << d)
+        pos += 1
+        p, q = s(n), s(n + 1)
+        if p > U32 or q > U32:
+            continue
+        nodes += 1
+        rows.append((p, q) + code_index(p, q))
+        for cp, cq in ((p, p + q), (p + q, q)):
+            if cp <= U32 and cq <= U32:
+                kids += 1
+                rows.append((cp, cq) + code_index(cp, cq))
+    return rows, nodes, kids, pos
+
+
+def deep_digest():
+    rows, nodes, kids, pos = deep_items()
+    h = FNV0
+    for r in rows:
+        for w in r:
+            h = step(h, w)
+    return h, nodes, kids, pos
+
+
+def noncoprime_pairs():
+    out = []
+    for i in range(1000):
+        g = 2 + splitmix_at(5 * i + (1 << 42)) % 65535
+        a = 1 + splitmix_at(5 * i + 1 + (1 << 42)) % (U32 // g)
+        b = 1 + splitmix_at(5 * i + 2 + (1 << 42)) % (U32 // g)
+        out.append((g * a, g * b))
+    return out
+
+
+def noncoprime_digest():
+    h = FNV0
+    for p, q in noncoprime_pairs():
+        c, ix = code_index(p, q)
+        assert c == NOTC
+        for w in (p, q, c, ix):
+            h = step(h, w)
+    return h
+
+
 def edge_nodes():
     v = set()
     for k in range(1, 64):
@@ -311,6 +365,10 @@ def main():
         print(hx(nodes_digest(arg)))
     elif cmd == "fracs":
         print(hx(fracs_digest(arg)))
+    elif cmd == "deep":
+        print(*[hx(deep_digest()[0])] + list(deep_digest()[1:]))
+    elif cmd == "noncoprime":
+        print(hx(noncoprime_digest()))
     elif cmd == "edges":
         print(len(edge_nodes()), hx(edges_digest()))
     elif cmd == "check":
@@ -321,6 +379,12 @@ def main():
         print("constexpr std::uint64_t kPairsDigest[2] = {%s};" % ", ".join(hx(pairs_digest(k)) for k in range(2)))
         print("constexpr std::uint64_t kNodesDigest[4] = {%s};" % ", ".join(hx(nodes_digest(k)) for k in range(4)))
         print("constexpr std::uint64_t kFracsDigest[2] = {%s};" % ", ".join(hx(fracs_digest(k)) for k in range(2)))
+        dd = deep_digest()
+        print("constexpr std::uint64_t kDeepDigest = %s;" % hx(dd[0]))
+        print("constexpr std::uint32_t kDeepNodes = %du;" % dd[1])
+        print("constexpr std::uint32_t kDeepKids = %du;" % dd[2])
+        print("constexpr std::uint64_t kDeepTries = %dull;" % dd[3])
+        print("constexpr std::uint64_t kNonCoprimeDigest = %s;" % hx(noncoprime_digest()))
         print("constexpr std::uint64_t kEdgesDigest = %s;" % hx(edges_digest()))
         print("constexpr std::size_t kEdgesCount = %d;" % len(edge_nodes()))
         rows = shape_table()

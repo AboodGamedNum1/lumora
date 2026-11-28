@@ -7,7 +7,7 @@
 // root by run-length shapes). Extents, named in the test names and in docs/calkinwilf.md:
 //   exhaustive: every node n = 1..2^22 (4 chunk cases of 2^20): fusc, calkin_wilf, lowest terms, the round trip calkin_wilf_index(calkin_wilf(n)) = n, the bound s(n) <= F(bits + 1);
 //   exhaustive: every pair (p, q) with p, q in 0..1024 (2 cases), zeros and non-coprime pairs included, against the one-subtraction walk and a digest, with the inverse for every Ok;
-//   sampled: 200000 nodes in [2^22, 2^64 - 2] (4 shards of 50000; digests, lowest terms, the round trip where both parts fit a u32) and 100000 random u32 pairs (2 shards);
+//   sampled: 200000 nodes in [2^22, 2^64 - 2] (4 shards of 50000; digests, lowest terms, the round trip where both parts fit a u32) and 100000 random u32 pairs (2 shards); 20000 nodes of depth 40..63 that fit a u32 with their children that fit a u32 (37628); 1000 deliberately non-coprime pairs;
 //   depth boundary: 1594 fractions of depth 62, 63 and 64 from several shapes (single runs, two runs for every split, runs of equal length, three runs, random runs; both
 //     orientations): depth 62 and 63 are Ok with the exact index, depth 64 is TooLarge; every k / 1 and 1 / k for k = 1..70; the u32 maximum in both orientations;
 //   edges: 2^k - 1, 2^k, 2^k + 1 for k = 1..63 and 2^64 - 3 .. 2^64 - 1 (digest and closed forms); the maximisers n_k = (2^(k + 1) + (-1)^k) / 3 for k = 1..64 (value F(k + 1));
@@ -41,6 +41,11 @@ constexpr std::uint64_t kChunkDigest[4] = {0xb09fd30e9f05502dull, 0x317b252b100e
 constexpr std::uint64_t kPairsDigest[2] = {0xe668aadc738d56c2ull, 0x2051e04f1a302793ull};
 constexpr std::uint64_t kNodesDigest[4] = {0x3351a4c981f78b8bull, 0x1cb721ed3edb2f66ull, 0x79586f37d6abe642ull, 0x2b1bea2625ef1750ull};
 constexpr std::uint64_t kFracsDigest[2] = {0xae707e5a127fc214ull, 0xe27869de461774b7ull};
+constexpr std::uint64_t kDeepDigest = 0x05de3485f12ddf6eull;
+constexpr std::uint32_t kDeepNodes = 20000u;
+constexpr std::uint32_t kDeepKids = 37628u;
+constexpr std::uint64_t kDeepTries = 30619ull;
+constexpr std::uint64_t kNonCoprimeDigest = 0x288e77f79261a311ull;
 constexpr std::uint64_t kEdgesDigest = 0xc9d57c3048a53438ull;
 constexpr std::size_t kEdgesCount = 191;
 struct Shape { std::uint32_t p; std::uint32_t q; std::uint32_t depth; std::uint64_t index; };
@@ -2160,4 +2165,66 @@ TEST_CASE("Fibonacci ratios F(i + 1) / F(i) and F(i) / F(i + 1) for every pair t
   // the ratio just beyond: F(48) does not fit a u32, so the pair is out of the index domain (only the fusc side is tested for it)
   bool fok = true;
   CHECK(run_fusc(f.f[48], &fok) >= 1u);
+}
+
+// 20000 sampled nodes of depth 40..63 whose fraction fits a u32 (all Ok), and their depth + 1 children that fit a u32 (Ok up to depth 63, TooLarge at depth 64).
+TEST_CASE("deep pairs: 20000 sampled nodes of depth 40..63 and their children", "[calkinwilf][sample]") {
+  u64 h = kFnv0;
+  bool ok = true;
+  u32 nodes = 0u;
+  u32 kids = 0u;
+  u32 toolarge = 0u;
+  u64 pos = 0u;
+  while (nodes < 20000u) {
+    const u64 d = 40u + splitmix_at(3u * pos + (1ull << 41)) % 24u;
+    const u64 n = (1ull << d) + splitmix_at(3u * pos + 1u + (1ull << 41)) % (1ull << d);
+    ++pos;
+    const Cw c = run_cw(n);
+    if (!c.ok) {
+      ok = false;
+      break;
+    }
+    if (c.num > kU32 || c.den > kU32) continue;
+    ++nodes;
+    const Ix ix = run_index(c.num, c.den);
+    if (ix.r != CwResult::Ok || ix.index != n || !ix.guards) ok = false;
+    h = fold(fold(fold(fold(h, c.num), c.den), code_of(ix.r)), ix.index);
+    for (u32 side = 0u; side < 2u; ++side) {
+      const u64 cp = side == 0u ? c.num : c.num + c.den;
+      const u64 cq = side == 0u ? c.num + c.den : c.den;
+      if (cp > kU32 || cq > kU32) continue;
+      ++kids;
+      const Ix kx = run_index(cp, cq);
+      if (!kx.guards) ok = false;
+      if (d < 63u) {
+        if (kx.r != CwResult::Ok || kx.index != 2u * n + side) ok = false;
+      } else {
+        if (kx.r != CwResult::TooLarge) ok = false;
+        ++toolarge;
+      }
+      h = fold(fold(fold(fold(h, cp), cq), code_of(kx.r)), kx.r == CwResult::Ok ? kx.index : 0u);
+    }
+  }
+  CHECK(ok);
+  CHECK(nodes == kDeepNodes);
+  CHECK(kids == kDeepKids);
+  CHECK(toolarge == 22u);
+  CHECK(pos == kDeepTries);
+  CHECK(h == kDeepDigest);
+}
+
+// 1000 deliberately non-coprime u32 pairs (g * a, g * b with g >= 2): NotCoprime, nothing written, also where the index would not fit.
+TEST_CASE("non-coprime pairs: 1000 sampled", "[calkinwilf][sample]") {
+  u64 h = kFnv0;
+  bool ok = true;
+  for (u64 i = 0u; i < 1000u; ++i) {
+    const u64 g = 2u + splitmix_at(5u * i + (1ull << 42)) % 65535u;
+    const u64 a = 1u + splitmix_at(5u * i + 1u + (1ull << 42)) % (kU32 / g);
+    const u64 b = 1u + splitmix_at(5u * i + 2u + (1ull << 42)) % (kU32 / g);
+    const Ix ix = run_index(g * a, g * b);
+    if (ix.r != CwResult::NotCoprime || !ix.guards) ok = false;
+    h = fold(fold(fold(fold(h, g * a), g * b), code_of(ix.r)), 0u);
+  }
+  CHECK(ok);
+  CHECK(h == kNonCoprimeDigest);
 }
