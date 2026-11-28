@@ -1,6 +1,6 @@
 // Multiplicative structure of the integers modulo m: the multiplicative order of a residue, the Carmichael function and the smallest primitive root.
 // Pure integer: no floating point, no libm, no 128-bit types (no __int128, no compiler builtins or intrinsics: MSVC), no allocation, no recursion, no
-// global state, no arrays. A call takes O(sqrt(m)) steps plus a small number of modular powers (a few hundred at most), with O(1) automatic memory; trying
+// global state, no arrays. A call takes O(sqrt(m)) steps plus a small number of modular powers, with O(1) automatic memory (mult_order needs at most about 40 powers, since the order divides lambda(m) < 2^32 and each prime factor is stripped at most Omega(lambda) times; primitive_root tries candidates g upward and the least primitive root has no tight proved bound, so the docs state the measured worst count and its method instead); trying
 // every exponent up to the order, or building a table of residues, is not acceptable for m = kMaxM.
 // Evidence label: unit tests only.
 #pragma once
