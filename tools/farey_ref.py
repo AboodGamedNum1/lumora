@@ -5,7 +5,7 @@ Neighbours in the Farey sequence F_n. Small n: the whole sorted sequence F_n is 
 comparison) and the neighbours are read from the sorted list. Larger n: the exact definition by a scan, the least fraction above a / b with denominator at most n, which is
 the minimum of (floor(a d / b) + 1) / d over every d in 1..n (and symmetrically the maximum of (ceil(a d / b) - 1) / d for the previous term). The full u32 range: the
 window property (c / d follows a / b in F_n iff b c - a d = 1 and n - b < d <= n), with d found from pow(a, -1, b); every result is verified with exact integers, and
-the scan is cross-checked on sampled n up to 3000 by the `check` command. The Haros recurrence (F2) builds the whole sequence without any gcd.
+the `check` command cross-checks the scan against the window formula for n up to 40 (every term) and on sampled n up to 3000 and up to 20000, and the Stern-Brocot descent (sb_neighbour, batched mediant steps to the two parents of a / b, then the parent advanced by multiples of a / b) against the window formula for every term with n up to 40 and on 3000 samples over the whole u32 range. The Haros recurrence (F2) builds the whole sequence without any gcd.
 Digests are FNV-1a over 64-bit words (fold(h, w) = (h ^ w) * 0x100000001b3 mod 2^64, start 0xcbf29ce484222325).
 Commands: check, f1, f2 A|B|C, f3, f4 K (K = 0..3), f4b, emit_part N (N = 0..2).
 """
@@ -53,6 +53,29 @@ def neigh_scan(n, a, b, nxt):
             if best is None or f > best:
                 best = f
     return best.numerator, best.denominator
+
+
+def sb_neighbour(n, a, b, nxt):
+    """Stern-Brocot mediant descent to a / b (batched steps). The two parents L and R of a / b satisfy det 1 with it; the neighbour in F_n is the parent
+    advanced by multiples of a / b: (c0 + k a) / (d0 + k b) with the largest k keeping the denominator at most n. Needs 0 < a / b < 1 or the matching end."""
+    lc, ld, rc, rd = 0, 1, 1, 0
+    while True:
+        mc, md = lc + rc, ld + rd
+        if (mc, md) == (a, b):
+            break
+        if a * md < mc * b:  # a / b below the mediant: move right bound left, batched
+            num = b * rc - a * rd
+            den = a * ld - b * lc
+            j = (num - 1) // den
+            rc, rd = rc + j * lc, rd + j * ld
+            assert j >= 1
+        else:  # above: move left bound right, batched (L_j = L + j R stays below a / b while j (b rc - a rd) < a ld - b lc)
+            j = (a * ld - b * lc - 1) // (b * rc - a * rd)
+            lc, ld = lc + j * rc, ld + j * rd
+            assert j >= 1
+    cc, dd = (rc, rd) if nxt else (lc, ld)
+    k = (n - dd) // b
+    return cc + k * a, dd + k * b
 
 
 def neigh_window(n, a, b, nxt):
@@ -296,6 +319,30 @@ def c_check():
             assert neigh_scan(n, a, b, True) == neigh_window(n, a, b, True)
         if a != 0:
             assert neigh_scan(n, a, b, False) == neigh_window(n, a, b, False)
+    # Stern-Brocot descent against the window formula over the whole u32 range, and the scan against both on sampled n up to 20000
+    for i in range(3000):
+        n, a, b = vcase((1 << 42) + 4 * i)
+        if 0 < a < b:
+            assert sb_neighbour(n, a, b, True) == neigh_window(n, a, b, True), (n, a, b)
+            assert sb_neighbour(n, a, b, False) == neigh_window(n, a, b, False), (n, a, b)
+    for n in range(1, 41):
+        for b in range(1, n + 1):
+            for a in range(1, b):
+                if gcd(a, b) == 1:
+                    assert sb_neighbour(n, a, b, True) == neigh_window(n, a, b, True)
+                    assert sb_neighbour(n, a, b, False) == neigh_window(n, a, b, False)
+    for i in range(300):
+        w = splitmix_at((1 << 43) + i)
+        n = 1 + w % 20000
+        b = 1 + splitmix_at((1 << 43) + 1000 + i) % n
+        a = splitmix_at((1 << 43) + 2000 + i) % (b + 1)
+        while gcd(a, b) != 1:
+            a = (a + 1) % (b + 1)
+        if 0 < a < b:
+            assert neigh_scan(n, a, b, True) == neigh_window(n, a, b, True) == sb_neighbour(n, a, b, True), (n, a, b)
+            assert neigh_scan(n, a, b, False) == neigh_window(n, a, b, False) == sb_neighbour(n, a, b, False), (n, a, b)
+        elif a == 0 or a == b:
+            assert neigh_scan(n, a, b, a == 0) == neigh_window(n, a, b, a == 0)
     # header examples
     assert verdict(5, 1, 2, True)[1:] == (3, 5) and verdict(5, 1, 2, False)[1:] == (2, 5)
     assert verdict(100, 22, 67, True)[1:] == (23, 70) and verdict(100, 22, 67, False)[1:] == (21, 64)
