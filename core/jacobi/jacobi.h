@@ -1,7 +1,10 @@
 // Quadratic residue tools: the Kronecker symbol, the Jacobi symbol and the least square root modulo a prime.
 // Pure integer: no floating point, no libm, no 128-bit types (no __int128, no compiler builtins or intrinsics: MSVC), no allocation, no recursion, no global
 // state, no arrays, no tables. kronecker and jacobi take O(log n) steps (a gcd-style reduction, no factoring). sqrt_mod_prime takes O(sqrt(p)) steps for the
-// primality check plus O(log^2 p) steps for the root; the multiplication modulo p is a u64 product of two residues below p (p < 2^32), reduced at once.
+// primality check plus a root step of O(log^2 p) modular multiplications once a quadratic non-residue is known. The search for the non-residue has no unconditional
+// polylogarithmic bound: it is at most sqrt(p) + 1 candidates (proved), and polylogarithmic only under the generalized Riemann hypothesis; the docs must state the
+// measured worst count over every prime below 2^32 and its method (a measurement, not a proof). The multiplication modulo p is a u64 product of two residues below p
+// (p < 2^32), reduced at once.
 // Evidence label: unit tests only.
 #pragma once
 #include <cstdint>
