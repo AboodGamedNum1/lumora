@@ -545,6 +545,37 @@ TEST_CASE("bad popcount: every mask of n up to 16 with every k", "[combrank]") {
   CHECK(ok);
 }
 
+TEST_CASE("bad popcount, n = 17..20: every mask for k in {0, 1, 2, n - 1, n} and 20000 sampled masks per n", "[combrank]") {
+  bool ok = true;
+  u64 calls = 0u;
+  for (u32 n = 17u; n <= 20u; ++n) {
+    const u32 ks[5] = {0u, 1u, 2u, n - 1u, n};
+    for (u32 t = 0u; t < 5u; ++t) {
+      const u32 k = ks[t];
+      for (u64 m = 0u; m < (u64{1} << n); ++m) {
+        const bool good = pop(m) == k;
+        const Lr a = l_rank(m, n, k);
+        const Lr b = l_next(m, n, k);
+        if (!a.guards || !b.guards) ok = false;
+        if (!good && !(a.r == CbResult::BadMask && b.r == CbResult::BadMask)) ok = false;
+        if (good && !(same(a, o_rank(m, n, k)) && same(b, o_next(m, n, k)))) ok = false;
+        ++calls;
+      }
+    }
+    for (u64 i = 0u; i < 20000u; ++i) {
+      const u64 w = splitmix_at((u64{1} << 42) + u64{n - 17u} * 20000u + i);
+      const u64 m = w & lowbits(n);
+      const u32 k = static_cast<u32>((w >> 40) % (n + 1u));
+      const Lr a = l_rank(m, n, k);
+      const Lr b = l_next(m, n, k);
+      if (!(same(a, o_rank(m, n, k)) && same(b, o_next(m, n, k)))) ok = false;
+      ++calls;
+    }
+  }
+  CHECK(ok);
+  CHECK(calls == 4u * 20000u + 5u * (131072u + 262144u + 524288u + 1048576u));
+}
+
 TEST_CASE("bad masks: a bit at n or above, the wrong popcount, at every (n, k)", "[combrank]") {
   bool ok = true;
   for (u32 n = 0u; n <= 64u; ++n)
